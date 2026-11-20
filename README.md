@@ -1,5 +1,7 @@
 # secret-friend-on-whatsapp
 
+[![ci](https://github.com/Michel1412/secret-friend-on-whatsapp/actions/workflows/ci.yml/badge.svg)](https://github.com/Michel1412/secret-friend-on-whatsapp/actions/workflows/ci.yml)
+
 Web app to run a Secret Santa (amigo secreto) over WhatsApp: connects a number by QR, draws pairs with no self-matches, sends each person their match and deletes it for the sender, keeping the draw secret even from the organizer.
 
 Aplicativo web de amigo secreto pelo WhatsApp: conecta um número pelo QR, sorteia pares sem ninguém tirar a si mesmo, manda para cada pessoa só o nome que ela tirou e apaga essa mensagem para quem enviou, para o sorteio continuar secreto até para quem organiza.
@@ -70,6 +72,10 @@ Abra [http://127.0.0.1:38472](http://127.0.0.1:38472). A API fica em [http://127
 secret-friend-on-whatsapp/
 ├── package.json              nome do pacote, scripts dev/test/build/start
 ├── package-lock.json
+├── LICENSE                   GNU AGPL-3.0-only
+├── NOTICE                    autoria, marcas e aviso
+├── CONTRIBUTING.md           pull requests, DCO e testes
+├── .github/workflows/ci.yml  GitHub Actions, job ci
 ├── .env.example              variáveis documentadas acima
 ├── .gitignore                ignora node_modules, dist, .env e data/
 ├── index.html                título da aba: Papelzinho
@@ -266,3 +272,11 @@ Bibliotecas declaradas no `package.json`. A licença é a do pacote instalado em
 - [@types/react](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react) — tipos do React. Licença MIT.
 - [@types/react-dom](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom) — tipos do react-dom. Licença MIT.
 - [@types/qrcode](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/qrcode) — tipos do qrcode. Licença MIT.
+
+## Licença
+
+Copyright (C) 2026 Michel Bocchi Junior.
+
+Este projeto é software livre sob a GNU Affero General Public License v3.0 apenas (AGPL-3.0-only). O texto integral está em [LICENSE](LICENSE).
+
+Cópias e obras derivadas precisam preservar o [NOTICE](NOTICE). Pull requests, o `Signed-off-by` (DCO, `git commit -s`) e a exigência de testes estão em [CONTRIBUTING.md](CONTRIBUTING.md).
