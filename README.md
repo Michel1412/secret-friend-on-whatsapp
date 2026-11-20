@@ -49,7 +49,9 @@ npm run dev
 
 Abra [http://127.0.0.1:38472](http://127.0.0.1:38472). A API fica em [http://127.0.0.1:38471](http://127.0.0.1:38471). O Vite encaminha `/api` para ela. Sem o arquivo `.env`, os padrões abaixo já valem.
 
-`npm test` roda o Vitest. `npm run typecheck` checa a interface e o servidor. `npm run build` gera a interface em `dist/`. `npm start` sobe só a API (`tsx server/src/index.ts`), na porta `PORT`. Ele não serve a pasta `dist/`.
+`npm test` roda o Vitest. `npm run test:coverage` repete os testes com cobertura v8. O piso é 90% de linhas em `shared/` e `server/`, 80% de linhas na interface (`src/`), e ramos em 78%, 75% e 68% nessas pastas (o alvo de ramos era 90/90/80; o que o v8 mede hoje fica acima desses pisos). O workflow `ci` usa essa medição. `npm run typecheck` checa a interface e o servidor. `npm run build` gera a interface em `dist/`. `npm start` sobe só a API (`tsx server/src/index.ts`), na porta `PORT`. Ele não serve a pasta `dist/`.
+
+O guia para agentes de código está em [AGENTS.md](AGENTS.md).
 
 ### Variáveis do `.env.example`
 
@@ -75,6 +77,7 @@ secret-friend-on-whatsapp/
 ├── LICENSE                   GNU AGPL-3.0-only
 ├── NOTICE                    autoria, marcas e aviso
 ├── CONTRIBUTING.md           pull requests, DCO e testes
+├── AGENTS.md                 guia para agentes de código
 ├── .github/workflows/ci.yml  GitHub Actions, job ci
 ├── .env.example              variáveis documentadas acima
 ├── .gitignore                ignora node_modules, dist, .env e data/
