@@ -71,7 +71,7 @@ afterEach(async () => {
 describe('rotas HTTP', () => {
   it('recusa rotas privadas sem cookie e aceita o login', async () => {
     const { app } = await harness()
-    for (const path of ['/api/perfil', '/api/whatsapp', '/api/sorteio']) {
+    for (const path of ['/api/perfil', '/api/whatsapp', '/api/sorteio', '/api/historico']) {
       const denied = await request(app).get(path)
       expect(denied.status).toBe(401)
     }
@@ -157,6 +157,14 @@ describe('rotas HTTP', () => {
     const board = await api.get('/api/sorteio').set('Cookie', cookie)
     expect(board.body.envio.ativo).toBe(false)
     expect(board.body.sorteio.participantes.every((person: { status: string }) => person.status === 'apagado')).toBe(true)
+    const log = await api.get('/api/historico').query({ sorteio: board.body.sorteio.id }).set('Cookie', cookie)
+    expect(log.status).toBe(200)
+    expect(log.body.eventos.some((event: { tipo: string }) => event.tipo === 'apagado')).toBe(true)
+    expect(JSON.stringify(log.body)).not.toMatch(/sorteadoNome|Aviso/)
+    const testLog = await api.post('/api/whatsapp/testar-apagar').set('Cookie', cookie).send({})
+    expect(testLog.status).toBe(200)
+    const withTest = await api.get('/api/historico').query({ sorteio: board.body.sorteio.id }).set('Cookie', cookie)
+    expect(withTest.body.eventos.some((event: { tipo: string }) => event.tipo === 'teste')).toBe(true)
   })
 
   it('trava a quebra de sigilo e devolve os pares só com a frase', async () => {

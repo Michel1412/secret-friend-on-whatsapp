@@ -10,7 +10,8 @@ import { normalizeBrazilPhone } from '../../shared/phone.ts'
 import { templateHasVariable } from '../../shared/template.ts'
 import type { ParticipantInput } from '../../shared/types.ts'
 import { clampSendDelay, config } from './config.ts'
-import { montarSorteio, toPublicDraw, toReveal } from './draw-store.ts'
+import { montarSorteio, toPublicDraw, toReveal, type StoredDraw } from './draw-store.ts'
+import { deriveMember, nextAttempt, type HistoryEvent } from './history.ts'
 import { UserRegistry, type UserRuntime } from './registry.ts'
 
 const logger = pino({ level: config.logLevel })
@@ -44,6 +45,18 @@ function readCookie(header: string | undefined): string | null {
 function writeCookie(res: Response, email: string | null) {
   const base = `${COOKIE}=${email ? encodeURIComponent(email) : ''}; Path=/; HttpOnly; SameSite=Lax`
   res.setHeader('Set-Cookie', email ? `${base}; Max-Age=31536000` : `${base}; Max-Age=0`)
+}
+
+function projectDraw(draw: StoredDraw, events: HistoryEvent[]) {
+  const pub = toPublicDraw(draw)
+  for (const person of pub.participantes) {
+    const derived = deriveMember(events.filter((event) => event.participantId === person.id))
+    if (!derived) continue
+    person.status = derived.status
+    person.detalhe = derived.detalhe
+    person.manter = derived.manter
+  }
+  return pub
 }
 
 function readParticipants(body: unknown): ParticipantInput[] {
@@ -174,6 +187,21 @@ export function createApp(registry: UserRegistry = new UserRegistry(config.dataD
         phone = parsed.e164
       }
       const result = await user.whatsapp.testarApagar(phone)
+      const draw = await user.draw.load()
+      const existing = await user.history.load()
+      const participantId = draw?.participantes.find((person) => phone && person.telefone === phone)?.id ?? 'teste'
+      await user.history.append({
+        participantId,
+        destino: result.destino,
+        tipo: 'teste',
+        tentativa: nextAttempt(existing, participantId, draw?.id ?? 'sem-sorteio'),
+        sentAt: new Date().toISOString(),
+        deletedAt: result.apagadoOk ? new Date().toISOString() : null,
+        confirmedAt: result.apagadoOk ? new Date().toISOString() : null,
+        erro: result.envioOk ? null : 'O teste de apagar falhou.',
+        messageId: null,
+        sorteioId: draw?.id ?? 'sem-sorteio',
+      })
       const historico = await user.testes.add({
         codigo: result.codigo,
         destino: result.destino,
@@ -190,7 +218,8 @@ export function createApp(registry: UserRegistry = new UserRegistry(config.dataD
     asyncRoute(async (req, res) => {
       const user = await currentUser(req)
       const draw = await user.draw.load()
-      res.json({ sorteio: draw ? toPublicDraw(draw) : null, envio: user.sender.view() })
+      const events = draw ? await user.history.forDraw(draw.id) : []
+      res.json({ sorteio: draw ? projectDraw(draw, events) : null, envio: user.sender.view() })
     }),
   )
 
@@ -206,6 +235,15 @@ export function createApp(registry: UserRegistry = new UserRegistry(config.dataD
       await user.draw.save(draw)
       user.sigilo.reset()
       res.json({ sorteio: toPublicDraw(draw) })
+    }),
+  )
+
+  app.get(
+    '/api/historico',
+    asyncRoute(async (req, res) => {
+      const user = await currentUser(req)
+      const sorteioId = typeof req.query.sorteio === 'string' && req.query.sorteio ? req.query.sorteio : null
+      res.json({ eventos: await user.history.forDraw(sorteioId) })
     }),
   )
 

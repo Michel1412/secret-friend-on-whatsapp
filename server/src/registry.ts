@@ -4,6 +4,7 @@ import path from 'node:path'
 import { emailAceito } from '../../shared/email.ts'
 import { createSigiloGate } from '../../shared/sigilo.ts'
 import { DrawStore } from './draw-store.ts'
+import { HistoryStore } from './history.ts'
 import { ProfileStore } from './profile.ts'
 import { Sender } from './sender.ts'
 import { TestLog } from './test-log.ts'
@@ -15,6 +16,7 @@ export type UserRuntime = {
   dir: string
   profile: ProfileStore
   draw: DrawStore
+  history: HistoryStore
   whatsapp: WhatsAppSession
   sender: Sender
   testes: TestLog
@@ -49,8 +51,9 @@ export class UserRegistry {
     await mkdir(path.join(dir, 'wwebjs'), { recursive: true })
     const profile = new ProfileStore(path.join(dir, 'perfil.json'), email)
     const draw = new DrawStore(path.join(dir, 'sorteio.json'))
+    const history = new HistoryStore(path.join(dir, 'historico.json'))
     const whatsapp = this.createSession(path.join(dir, 'wwebjs'), slug)
-    const sender = new Sender(draw, whatsapp)
+    const sender = new Sender(draw, whatsapp, history)
     const testes = new TestLog(path.join(dir, 'testes.json'))
     const runtime: UserRuntime = {
       email,
@@ -58,6 +61,7 @@ export class UserRegistry {
       dir,
       profile,
       draw,
+      history,
       whatsapp,
       sender,
       testes,

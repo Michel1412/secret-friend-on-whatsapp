@@ -15,6 +15,7 @@ Isto não é a API oficial da Meta. Automatizar o WhatsApp Web pode violar os te
 - **Selo Verificado:** o envio e o teste de apagar só seguem quando o cliente está `ready` e `getChats()` terminou (`appStateReady`, `envioLiberado`).
 - **Sorteio:** `drawDerangement` gera uma permutação sem ponto fixo. O par fica só em `sorteio.json`. A API pública devolve status, não o nome sorteado.
 - **Envio:** `Sender` percorre quem ainda não está `apagado` nem marcado como próprio número. Envia o modelo (`{{sorteado}}` ou `{{amigo}}`), depois tenta apagar para mim até 3 vezes e só marca `apagado` com `message_revoke_me` ou se a mensagem sumir. Se o destinatário é o número conectado, envia e **não apaga**.
+- **Histórico:** `historico.json` é append-only por usuário. Cada evento guarda id do participante, destino mascarado, tipo, tentativa, horários e id da mensagem. Não guarda o nome sorteado nem o texto. `GET /api/historico` filtra por sorteio. O status mostrado sai do último evento.
 - **Sigilo:** `createSigiloGate` exige a frase. Depois de 5 erros seguidos, trava 20 segundos. `POST /api/sigilo` é o único caminho que devolve os pares.
 
 O servidor Express escuta só quando `server/src/index.ts` é o processo principal (`npm start` / `npm run dev:api`). Os testes importam `createApp`.

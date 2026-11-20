@@ -1,5 +1,5 @@
 import { formatBrazilPhone } from '../../shared/phone'
-import type { PublicDraw, SendJobView, SendStatus } from '../../shared/types'
+import type { HistoryEvent, PublicDraw, SendJobView, SendStatus } from '../../shared/types'
 import { Button } from './ui/button'
 
 const LABEL: Record<SendStatus, string> = {
@@ -15,6 +15,7 @@ type Props = {
   connected: boolean
   mismatch: boolean
   verificado: boolean
+  historico?: HistoryEvent[]
   onAskSend: () => void
   onAskSigilo: () => void
 }
@@ -25,7 +26,7 @@ function when(iso: string) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
 }
 
-export function ProgressCard({ sorteio, envio, connected, mismatch, verificado, onAskSend, onAskSigilo }: Props) {
+export function ProgressCard({ sorteio, envio, connected, mismatch, verificado, historico = [], onAskSend, onAskSigilo }: Props) {
   if (!sorteio) {
     return (
       <section className="card" aria-labelledby="titulo-envio">
@@ -109,6 +110,37 @@ export function ProgressCard({ sorteio, envio, connected, mismatch, verificado, 
           </li>
         ))}
       </ul>
+      {historico.length > 0 ? (
+        <div className="table-wrap">
+          <table className="reveal">
+            <caption className="small muted">Histórico deste sorteio</caption>
+            <thead>
+              <tr>
+                <th>Pessoa</th>
+                <th>Evento</th>
+                <th>Destino</th>
+                <th>Tentativa</th>
+                <th>Quando</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historico.map((event, index) => {
+                const person = sorteio.participantes.find((item) => item.id === event.participantId)
+                const stamp = event.confirmedAt || event.deletedAt || event.sentAt
+                return (
+                  <tr key={`${event.participantId}-${event.tentativa}-${event.tipo}-${index}`}>
+                    <td>{person?.nome ?? 'Teste'}</td>
+                    <td>{event.tipo}</td>
+                    <td>{event.destino}</td>
+                    <td>{event.tentativa}</td>
+                    <td>{stamp ? when(stamp) : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
   )
 }

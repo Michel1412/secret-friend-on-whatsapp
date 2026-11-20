@@ -49,3 +49,27 @@ export type SendJobView = {
   total: number
   erro: string | null
 }
+
+export type HistoryType =
+  | 'consulta'
+  | 'enviado'
+  | 'apagado'
+  | 'nao_confirmado'
+  | 'proprio_numero'
+  | 'erro'
+  | 'reenviado'
+  | 'teste'
+
+/** Append-only send log. Never includes the drawn name or the message text. */
+export type HistoryEvent = {
+  participantId: string
+  destino: string
+  tipo: HistoryType
+  tentativa: number
+  sentAt: string | null
+  deletedAt: string | null
+  confirmedAt: string | null
+  erro: string | null
+  messageId: string | null
+  sorteioId: string
+}

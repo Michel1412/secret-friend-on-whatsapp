@@ -1,4 +1,4 @@
-import type { ParticipantInput, PublicDraw, RevealedPair, SendJobView, WhatsAppSnapshot } from '../shared/types'
+import type { HistoryEvent, ParticipantInput, PublicDraw, RevealedPair, SendJobView, WhatsAppSnapshot } from '../shared/types'
 
 export class ApiError extends Error {
   status: number
@@ -86,6 +86,11 @@ export function connectWhatsApp() {
 
 export function logoutWhatsApp() {
   return request<WhatsAppSnapshot>('/api/whatsapp/logout', { method: 'POST' })
+}
+
+export function getHistorico(sorteioId?: string) {
+  const query = sorteioId ? `?sorteio=${encodeURIComponent(sorteioId)}` : ''
+  return request<{ eventos: HistoryEvent[] }>(`/api/historico${query}`)
 }
 
 export function getSorteio() {

@@ -4,6 +4,7 @@ import {
   connectWhatsApp,
   createDraw,
   getPerfil,
+  getHistorico,
   getSession,
   getSorteio,
   getWhatsApp,
@@ -40,6 +41,7 @@ describe('cliente HTTP', () => {
         if (String(input).endsWith('/api/whatsapp/logout')) return json({ status: 'disconnected' })
         if (String(input).endsWith('/api/whatsapp/testar-apagar')) return json({ codigo: '00000000', passos: [], historico: [] })
         if (String(input).endsWith('/api/whatsapp')) return json({ status: 'disconnected', testes: [] })
+        if (String(input).includes('/api/historico')) return json({ eventos: [] })
         if (String(input).endsWith('/api/sorteio') && init?.method === 'POST') return json({ sorteio: { id: 's' } })
         if (String(input).endsWith('/api/sorteio')) return json({ sorteio: null, envio: { ativo: false, feitos: 0, total: 0, erro: null } })
         if (String(input).endsWith('/api/sigilo')) return json({ sorteioId: 's', criadoEm: '2026-01-01T00:00:00.000Z', pares: [] })
@@ -57,6 +59,7 @@ describe('cliente HTTP', () => {
     expect((await connectWhatsApp()).status).toBe('qr')
     expect((await logoutWhatsApp()).status).toBe('disconnected')
     expect((await testarApagar('')).codigo).toBe('00000000')
+    expect((await getHistorico('s')).eventos).toEqual([])
     expect((await getSorteio()).sorteio).toBe(null)
     expect((await createDraw([])).id).toBe('s')
     expect((await quebrarSigilo('quero quebrar o sigilo')).pares).toEqual([])
