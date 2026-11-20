@@ -64,8 +64,12 @@ function wa(status: WhatsAppSnapshot['status'] = 'connected') {
   }
 }
 
-async function settle() {
-  await new Promise((resolve) => setTimeout(resolve, 20))
+async function untilIdle(sender: Sender) {
+  const start = Date.now()
+  while (sender.isRunning()) {
+    if (Date.now() - start > 5000) throw new Error('o envio não terminou')
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
 }
 
 describe('fila de envio', () => {
@@ -86,7 +90,7 @@ describe('fila de envio', () => {
       .mockResolvedValueOnce({ sent: false, deletedForMe: false, error: 'Falha ao enviar a mensagem.' })
     sender.start(board, 'Aviso {{sorteado}}', 0)
     expect(() => sender.start(board, 'Aviso {{sorteado}}', 0)).toThrow(/andamento/)
-    await settle()
+    await untilIdle(sender)
     expect(board.participantes[0]?.status).toBe('apagado')
     expect(board.participantes[1]?.status).toBe('apagado')
     expect(board.participantes[2]?.status).toBe('erro')
@@ -100,7 +104,7 @@ describe('fila de envio', () => {
     ])
     session.deleteOwnMessage.mockResolvedValueOnce({ confirmed: false, via: null })
     sender.start(again, 'Aviso {{sorteado}}', 0)
-    await settle()
+    await untilIdle(sender)
     expect(again.participantes[0]?.status).toBe('enviado')
     expect(again.participantes[0]?.detalhe).toMatch(/não confirmado/)
     expect(again.participantes[2]?.status).toBe('apagado')
@@ -139,7 +143,7 @@ describe('fila de envio', () => {
       return { sent: false, deletedForMe: false, error: 'parou' }
     })
     sender.start(board, 'Aviso {{sorteado}}', 0)
-    await settle()
+    await untilIdle(sender)
     expect(board.participantes[0]?.manter).toBe(true)
     expect(board.participantes[0]?.detalhe).toMatch(/próprio número/)
     expect(board.participantes[1]?.status).toBe('pendente')
@@ -158,7 +162,7 @@ describe('fila de envio', () => {
     session.deliver.mockRejectedValue(new Error('rede caiu'))
     const sender = new Sender(store, session as unknown as WhatsAppSession)
     sender.start(draw(), 'Aviso {{sorteado}}', 0)
-    await settle()
+    await untilIdle(sender)
     expect(sender.view().erro).toBe('rede caiu')
     expect(sender.view().ativo).toBe(false)
   })
