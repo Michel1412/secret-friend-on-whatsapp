@@ -4,7 +4,7 @@ Web app to run a Secret Santa (amigo secreto) over WhatsApp: connects a number b
 
 Aplicativo web de amigo secreto pelo WhatsApp: conecta um número pelo QR, sorteia pares sem ninguém tirar a si mesmo, manda para cada pessoa só o nome que ela tirou e apaga essa mensagem para quem enviou, para o sorteio continuar secreto até para quem organiza.
 
-A marca na tela é **Papelzinho**. No WhatsApp, em Aparelhos conectados, o aparelho aparece como **Papelzinho - ZAP** (Chrome).
+A marca na tela é **Papelzinho**, ao lado de um presente azul com laço (`src/components/GiftLogo.tsx`, o mesmo desenho do `public/favicon.svg`). O tema é festa sobre fundo neutro: papel quente, texto escuro e acentos de confete (azul, verde, âmbar, coral e violeta), sem fundo colorido. As cores ficam só em `src/index.css`. No WhatsApp, em Aparelhos conectados, o aparelho aparece como **Papelzinho - ZAP** (Chrome).
 
 ## Visão geral e funcionalidades
 
@@ -12,12 +12,12 @@ O organizador entra com um e-mail, pareia um WhatsApp, cadastra a turma, sorteia
 
 - **Login por e-mail, sem validação.** Não há senha nem confirmação de caixa de entrada. O e-mail é aparado, posto em minúsculas e aceito se tiver o formato `algo@algo` (3 a 200 caracteres). Ele só separa os dados neste navegador. O cookie `secret-friend-on-whatsapp-email` é `HttpOnly` e `SameSite=Lax`.
 - **Conexão por QR.** O botão **Gerar QR** chama `POST /api/whatsapp/connect`. O `GET /api/whatsapp` (o polling da tela) só lê o estado: não abre o Chrome. Se uma abertura já está em andamento, outro clique espera a mesma tentativa.
-- **Selo Verificado.** Fica verde quando o cliente está `ready` e `getChats()` terminou. Enviar e **Testar apagar** ficam bloqueados até esse selo.
+- **Selo Verificado.** Fica verde (esmeralda, sobre fundo claro) quando o cliente está `ready` e `getChats()` terminou. Enviar e **Testar apagar** ficam bloqueados até esse selo.
 - **Cadastro.** Nome e celular brasileiro com DDD, gravados no perfil daquele e-mail. O formulário só libera com o WhatsApp conectado. Até 200 pessoas.
 - **Importação.** CSV (vírgula ou ponto e vírgula, UTF-8 com ou sem BOM), Excel `.xlsx` (dá para escolher a aba) ou um trecho colado da planilha. A prévia deixa escolher qual coluna é o nome e qual é o telefone. O app sugere pelo cabeçalho (`nome`, `telefone`, `celular`, `whatsapp`, `phone` e afins). Dá para marcar se a primeira linha é cabeçalho, substituir a lista ou acrescentar. Telefone inválido, vazio ou repetido aparece na prévia e não entra.
 - **Mensagem.** O padrão é `Oi! No amigo secreto você tirou: {{sorteado}}. Guarda segredo 🤫`. `{{amigo}}` também vira o nome sorteado. Sem uma das duas marcas, o envio nem começa.
 - **Sorteio.** Com pelo menos 2 pessoas, ninguém tira a si mesmo e cada pessoa é sorteada uma vez (permutação sem ponto fixo; se o sorteio aleatório não achar uma, cai numa rotação). Com uma pessoa só, não há sorteio. Sortear de novo substitui o resultado e fecha a quebra de sigilo.
-- **Envio e apagar para mim.** Cada mensagem sai com `sendMessage`. Depois da pausa, `message.delete(false)` pede ao WhatsApp Web para apagar **para mim**, não para todos. Quem recebeu continua com o texto. Há até 3 tentativas. **Apagado** só entra se chegar `message_revoke_me` ou se a mensagem sumir ao recarregar. Sem isso fica **Enviado (não confirmado apagado)**.
+- **Envio e apagar para mim.** Cada mensagem sai com `sendMessage`. Depois da pausa, `message.delete(false)` pede ao WhatsApp Web para apagar **para mim**, não para todos. Quem recebeu continua com o texto. Há até 3 tentativas. **Apagado** só entra se chegar `message_revoke_me` ou se a mensagem sumir ao recarregar. Sem isso fica **Enviado (não confirmado apagado)**. Na tela esses estados, mais o próprio número e o erro, usam cores distintas: verde, âmbar, violeta e coral.
 - **O próprio número não é apagado.** Se o participante é o WhatsApp conectado, a mensagem é enviada e permanece. O detalhe fica “Enviado para o próprio número, não apagado.”
 - **Testar apagar.** Manda `Teste Papelzinho #` e um código de 8 dígitos. O histórico guarda o destino mascarado (só os 4 últimos dígitos) e se o envio e o apagar confirmaram.
 - **Quebra de Sigilo.** Abre um modal de proteção. A frase fixa é `quero quebrar o sigilo`. Ela precisa ser digitada: colar, arrastar, o menu do botão direito e `Ctrl/Cmd+V` estão bloqueados. Maiúsculas e espaços a mais não importam. Frase errada mantém a lista fechada. Depois de 5 erros seguidos, o modal espera 20 segundos. Só então a API devolve quem tirou quem (nome e telefone), com exportação JSON e CSV. A frase não é uma senha.
@@ -83,7 +83,7 @@ secret-friend-on-whatsapp/
 │   ├── api.ts                chamadas /api
 │   ├── storage.ts            rascunho local do navegador
 │   ├── index.css
-│   └── components/           QR, cadastro, importação, mensagem, sigilo, envio
+│   └── components/           marca, QR, cadastro, importação, mensagem, sigilo, envio
 ├── server/src/               Express
 │   ├── index.ts              rotas e sinais de saída
 │   ├── config.ts             .env e limites

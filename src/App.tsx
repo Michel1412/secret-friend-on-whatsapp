@@ -21,6 +21,7 @@ import {
   type WhatsAppView,
 } from './api'
 import { ConnectionCard } from './components/ConnectionCard'
+import { GiftLogo } from './components/GiftLogo'
 import { MessageCard } from './components/MessageCard'
 import { ParticipantsCard } from './components/ParticipantsCard'
 import { ProgressCard } from './components/ProgressCard'
@@ -234,6 +235,7 @@ export function App() {
       <div className="shell">
         <header className="header">
           <div className="brand">
+            <GiftLogo />
             <h1>Papelzinho</h1>
           </div>
         </header>
@@ -275,12 +277,7 @@ export function App() {
     <div className="shell">
       <header className="header">
         <div className="brand">
-          <svg className="seal" viewBox="0 0 64 64" aria-hidden>
-            <path
-              fill="#f3ecdf"
-              d="M32 14l3.2 9.2 9.8.4-7.7 6.1 2.6 9.4L32 33.6l-8 5.5 2.6-9.4-7.7-6.1 9.8-.4z"
-            />
-          </svg>
+          <GiftLogo />
           <div>
             <h1>Papelzinho</h1>
             <p>Amigo secreto pelo WhatsApp. Cada pessoa recebe o nome que tirou, e a mensagem some do seu celular.</p>
