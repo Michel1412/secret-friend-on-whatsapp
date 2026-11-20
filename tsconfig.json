@@ -20,5 +20,5 @@
     }
   },
   "include": ["src", "shared"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "data", "coverage", "dist", ".wwebjs_auth", ".wwebjs_cache"]
 }

@@ -52,7 +52,7 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 - `src/` — React. `App.tsx` é a tela. `components/` tem QR, cadastro, importação, modelo, sigilo e envio.
 - `server/src/` — Express, registro, sessão WhatsApp, fila de envio, arquivos do usuário.
 - `shared/` — regras usadas pela tela e pela API: telefone, e-mail, modelo, derangement, sigilo, importação, identidade do próprio número, gate de verificação.
-- `data/` — criada em uso. Não vai no git.
+- `data/` — criada em uso, na raiz, de propósito (sessões antigas continuam valendo). Não vai no git. O Vite não escaneia essa pasta: `optimizeDeps.entries` é só `index.html`.
 - `AGENTS.md`, `CONTRIBUTING.md`, `LICENSE`, `NOTICE`.
 
 ## Convenções
