@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { impressaoDaLista } from '../shared/sigilo'
-import type { ParticipantInput, PublicDraw, RevealedPair, SendJobView } from '../shared/types'
+import type { HistoryEvent, ParticipantInput, PublicDraw, RevealedPair, SendJobView } from '../shared/types'
 import {
   ApiError,
   connectWhatsApp,
   createDraw,
   getPerfil,
+  getHistorico,
   getSession,
   getSorteio,
   getWhatsApp,
@@ -51,6 +52,7 @@ export function App() {
   const [wa, setWa] = useState<WhatsAppView | null>(null)
   const [sorteio, setSorteio] = useState<PublicDraw | null>(null)
   const [envio, setEnvio] = useState<SendJobView>({ ativo: false, feitos: 0, total: 0, erro: null })
+  const [historico, setHistorico] = useState<HistoryEvent[]>([])
   const [serverError, setServerError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState<'draw' | 'logout' | 'connect' | null>(null)
@@ -120,6 +122,8 @@ export function App() {
         setTestes(status.testes ?? [])
         setSorteio(board.sorteio)
         setEnvio(board.envio)
+        const log = await getHistorico(board.sorteio?.id)
+        if (!cancel) setHistorico(log.eventos)
         setServerError(null)
       } catch (error) {
         if (cancel) return
@@ -346,6 +350,7 @@ export function App() {
             connected={connected}
             verificado={Boolean(wa?.appStateReady)}
             mismatch={mismatch}
+            historico={historico}
             onAskSend={() => setConfirmSend(true)}
             onAskSigilo={() => setSigiloOpen(true)}
           />

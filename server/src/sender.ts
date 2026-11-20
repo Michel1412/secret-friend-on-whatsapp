@@ -1,6 +1,7 @@
 import { fillTemplate } from '../../shared/template.ts'
 import type { SendJobView } from '../../shared/types.ts'
-import type { DrawStore, StoredDraw } from './draw-store.ts'
+import type { DrawStore, StoredDraw, StoredParticipant } from './draw-store.ts'
+import { HistoryStore, maskDestination, nextAttempt, type HistoryType } from './history.ts'
 import type { WhatsAppSession } from './whatsapp.ts'
 
 function sleep(ms: number): Promise<void> {
@@ -17,6 +18,7 @@ export class Sender {
   constructor(
     private readonly store: DrawStore,
     private readonly whatsapp: WhatsAppSession,
+    private readonly history?: HistoryStore,
   ) {}
 
   view(): SendJobView {
@@ -67,7 +69,10 @@ export class Sender {
           continue
         }
         if (person.status === 'enviado' && person.mensagem) {
+          await this.note(draw.id, person, 'reenviado', person.mensagem.id, null)
           const removal = await this.whatsapp.deleteOwnMessage(person.mensagem)
+          const tipo: HistoryType = removal.confirmed ? 'apagado' : 'nao_confirmado'
+          await this.note(draw.id, person, tipo, person.mensagem.id, removal.confirmed ? null : NAO_CONFIRMADO)
           if (removal.confirmed) {
             person.status = 'apagado'
             person.detalhe = APAGADO
@@ -76,22 +81,28 @@ export class Sender {
             person.detalhe = NAO_CONFIRMADO
           }
         } else {
+          await this.note(draw.id, person, 'consulta', null, null)
           const text = fillTemplate(template, person.sorteadoNome)
           const result = await this.whatsapp.deliver(person.telefone, text)
           person.mensagem = result.key ?? person.mensagem
+          const messageId = result.key?.id ?? null
           if (!result.sent) {
             person.status = 'erro'
             person.detalhe = result.error ?? 'Falha ao enviar a mensagem.'
+            await this.note(draw.id, person, 'erro', messageId, person.detalhe)
           } else if (result.ownNumber) {
             person.status = 'enviado'
             person.manter = true
             person.detalhe = PROPRIO
+            await this.note(draw.id, person, 'proprio_numero', messageId, null)
           } else if (result.deletedForMe) {
             person.status = 'apagado'
             person.detalhe = APAGADO
+            await this.note(draw.id, person, 'apagado', messageId, null)
           } else {
             person.status = 'enviado'
             person.detalhe = NAO_CONFIRMADO
+            await this.note(draw.id, person, 'nao_confirmado', messageId, NAO_CONFIRMADO)
           }
         }
 
@@ -106,5 +117,29 @@ export class Sender {
       this.progress = { ...this.progress, ativo: false }
       await this.store.save(draw)
     }
+  }
+
+  private async note(
+    sorteioId: string,
+    person: StoredParticipant,
+    tipo: HistoryType,
+    messageId: string | null,
+    erro: string | null,
+  ) {
+    if (!this.history) return
+    const existing = await this.history.load()
+    const now = new Date().toISOString()
+    await this.history.append({
+      participantId: person.id,
+      destino: maskDestination(person.telefone),
+      tipo,
+      tentativa: nextAttempt(existing, person.id, sorteioId),
+      sentAt: tipo === 'apagado' ? null : now,
+      deletedAt: tipo === 'apagado' ? now : null,
+      confirmedAt: tipo === 'apagado' || tipo === 'proprio_numero' ? now : null,
+      erro,
+      messageId,
+      sorteioId,
+    })
   }
 }

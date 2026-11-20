@@ -22,6 +22,7 @@ O organizador entra com um e-mail, pareia um WhatsApp, cadastra a turma, sorteia
 - **Envio e apagar para mim.** Cada mensagem sai com `sendMessage`. Depois da pausa, `message.delete(false)` pede ao WhatsApp Web para apagar **para mim**, não para todos. Quem recebeu continua com o texto. Há até 3 tentativas. **Apagado** só entra se chegar `message_revoke_me` ou se a mensagem sumir ao recarregar. Sem isso fica **Enviado (não confirmado apagado)**. Na tela esses estados, mais o próprio número e o erro, usam cores distintas: verde, âmbar, violeta e coral.
 - **O próprio número não é apagado.** Se o participante é o WhatsApp conectado, a mensagem é enviada e permanece. O detalhe fica “Enviado para o próprio número, não apagado.”
 - **Testar apagar.** Manda `Teste Papelzinho #` e um código de 8 dígitos. O histórico guarda o destino mascarado (só os 4 últimos dígitos) e se o envio e o apagar confirmaram.
+- **Histórico de envio.** `historico.json` acumula eventos (consulta, enviado, apagado, não confirmado, próprio número, erro, reenviado, teste) sem o nome sorteado e sem o texto. `GET /api/historico?sorteio=` devolve essa lista. A tela mostra uma tabela por pessoa, com o horário no fuso do navegador. O status atual de cada pessoa sai do último evento.
 - **Quebra de Sigilo.** Abre um modal de proteção. A frase fixa é `quero quebrar o sigilo`. Ela precisa ser digitada: colar, arrastar, o menu do botão direito e `Ctrl/Cmd+V` estão bloqueados. Maiúsculas e espaços a mais não importam. Frase errada mantém a lista fechada. Depois de 5 erros seguidos, o modal espera 20 segundos. Só então a API devolve quem tirou quem (nome e telefone), com exportação JSON e CSV. A frase não é uma senha.
 
 ## Requisitos
@@ -120,6 +121,7 @@ secret-friend-on-whatsapp/
         ├── perfil.json
         ├── sorteio.json
         ├── testes.json
+        ├── historico.json       eventos de envio, sem o par e sem o texto
         └── wwebjs/session-<id>/   perfil do Chrome
 ```
 

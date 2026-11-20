@@ -80,6 +80,24 @@ describe('interface', () => {
         if (url.endsWith('/api/enviar') && method === 'POST') {
           return Response.json({ envio: { ativo: true, feitos: 0, total: 1, erro: null }, sorteio: draw })
         }
+        if (url.includes('/api/historico')) {
+          return Response.json({
+            eventos: [
+              {
+                participantId: 'a',
+                destino: '••••0001',
+                tipo: 'apagado',
+                tentativa: 1,
+                sentAt: '2026-01-02T15:04:00.000Z',
+                deletedAt: '2026-01-02T15:04:02.000Z',
+                confirmedAt: '2026-01-02T15:04:02.000Z',
+                erro: null,
+                messageId: 'MID',
+                sorteioId: 'sorteio-teste',
+              },
+            ],
+          })
+        }
         if (url.endsWith('/api/sorteio') && method === 'GET') {
           return Response.json({ sorteio: wa.appStateReady ? draw : null, envio: { ativo: false, feitos: 0, total: 0, erro: null } })
         }
@@ -122,6 +140,10 @@ describe('interface', () => {
       ],
     }
     expect(await screen.findByText('Verificado', undefined, { timeout: 3000 })).toBeTruthy()
+    expect(screen.getByText('Histórico deste sorteio')).toBeTruthy()
+    const stamp = new Date('2026-01-02T15:04:02.000Z')
+    const label = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(stamp)
+    expect(screen.getByText(label)).toBeTruthy()
     expect(screen.getByText('Apagado')).toBeTruthy()
     expect(screen.getByText('Enviado')).toBeTruthy()
     expect(screen.getByText('No seu número')).toBeTruthy()
