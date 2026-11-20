@@ -1,5 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#14614d"/>
-  <circle cx="32" cy="32" r="16" fill="none" stroke="#f3ecdf" stroke-width="2"/>
-  <path d="M32 20.5l2.2 6.2 6.6.3-5.2 4.2 1.8 6.3L32 33.8l-5.4 3.7 1.8-6.3-5.2-4.2 6.6-.3z" fill="#f3ecdf"/>
+  <title>Presente azul</title>
+  <rect width="64" height="64" rx="14" fill="#F7F4EF"/>
+  <rect x="12" y="32" width="40" height="24" rx="3.5" fill="#1B4F9C"/>
+  <rect x="8" y="22" width="48" height="12" rx="3" fill="#2F6FE4"/>
+  <rect x="28" y="22" width="8" height="34" fill="#F7FBFF"/>
+  <rect x="8" y="25" width="48" height="6" fill="#F7FBFF"/>
+  <path d="M31.2 20.4c-1.1-7.6-9.8-11.4-14.6-7.2-3.7 3.2-2.1 8.4 1.8 10.4 3.1 1.6 8.6.5 12.8-3.2z" fill="#3B82F6"/>
+  <path d="M32.8 20.4c1.1-7.6 9.8-11.4 14.6-7.2 3.7 3.2 2.1 8.4-1.8 10.4-3.1 1.6-8.6.5-12.8-3.2z" fill="#2563EB"/>
+  <circle cx="32" cy="20.2" r="4" fill="#1B4F9C"/>
+  <circle cx="30.6" cy="18.9" r="1.15" fill="#F7FBFF"/>
 </svg>

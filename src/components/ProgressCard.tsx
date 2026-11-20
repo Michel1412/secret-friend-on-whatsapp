@@ -103,7 +103,9 @@ export function ProgressCard({ sorteio, envio, connected, mismatch, verificado, 
               <span className="small muted">{formatBrazilPhone(person.telefone)}</span>
               {person.detalhe ? <div className="small muted">{person.detalhe}</div> : null}
             </div>
-            <span className={`tag ${person.status}`}>{person.manter ? 'No seu número' : LABEL[person.status]}</span>
+            <span className={`tag ${person.manter ? 'proprio' : person.status}`}>
+              {person.manter ? 'No seu número' : LABEL[person.status]}
+            </span>
           </li>
         ))}
       </ul>
