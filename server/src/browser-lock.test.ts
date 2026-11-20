@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   commandLineMatchesProfile,
+  ehFilhoDoProcesso,
   isBrowserAlreadyRunning,
   isBrowserCommand,
   mensagemAbertura,
@@ -8,6 +9,7 @@ import {
   parsePs,
   perfilAlvoValido,
   releaseStuckBrowser,
+  sanitizarMensagem,
   sessionUserDataDir,
   userDataDirFromError,
 } from './browser-lock'
@@ -122,5 +124,45 @@ describe('perfil travado do navegador', () => {
     expect(parsePs('  9  1 /usr/bin/google-chrome --user-data-dir=/tmp/session-a\n')).toEqual([
       { pid: 9, ppid: 1, command: '/usr/bin/google-chrome --user-data-dir=/tmp/session-a' },
     ])
+    expect(parseCimJson('')).toEqual([])
+    expect(parsePs('')).toEqual([])
+    expect(mensagemAbertura('texto')).toMatch(/navegador/)
+    expect(mensagemAbertura(new Error('Não consegui abrir o navegador do WhatsApp.'))).toMatch(/navegador/)
+    expect(sanitizarMensagem('  oi   ', ['ab'])).toBe('oi')
+    expect(sanitizarMensagem('x'.repeat(300)).endsWith('…')).toBe(true)
+  })
+
+  it('mata navegador órfão, preserva filho e ignora lista quebrada', async () => {
+    const dir = '/tmp/papel-perfil-teste/session-abc123abc123abc123abc123abc123ab'
+    const rows = [
+      { pid: 0, command: 'chrome' },
+      { pid: 4, ppid: 1, command: `google-chrome --user-data-dir=${dir}` },
+      { pid: 5, ppid: 4, command: `google-chrome --user-data-dir=${dir}` },
+      { pid: 6, ppid: 1, command: 'node index.js' },
+    ]
+    const killed: number[] = []
+    const released = await releaseStuckBrowser(dir, {
+      list: async () => rows,
+      kill: async (pid) => {
+        killed.push(pid)
+        if (pid === 4) throw new Error('sumiu')
+      },
+      remove: async () => undefined,
+      wait: async () => undefined,
+      rootPid: 5,
+    })
+    expect(killed).toEqual([4])
+    expect(released.kept).toContain(5)
+    const empty = await releaseStuckBrowser(dir, {
+      list: async () => {
+        throw new Error('ps')
+      },
+      remove: async () => undefined,
+      wait: async () => undefined,
+    })
+    expect(empty.killed).toEqual([])
+    expect(empty.removed.length).toBeGreaterThan(0)
+    expect(ehFilhoDoProcesso({ pid: 8, ppid: 99, command: 'chrome' }, [{ pid: 8, ppid: 99, command: 'chrome' }], 1)).toBe(false)
+    expect(await releaseStuckBrowser('session')).toEqual({ killed: [], kept: [], removed: [] })
   })
 })

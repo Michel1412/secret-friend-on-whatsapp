@@ -25,10 +25,15 @@ export function userSlug(email: string): string {
   return createHash('sha256').update(email).digest('hex').slice(0, 32)
 }
 
+export type SessionFactory = (dataPath: string, clientId: string) => WhatsAppSession
+
 export class UserRegistry {
   private readonly users = new Map<string, UserRuntime>()
 
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly createSession: SessionFactory = (dataPath, clientId) => new WhatsAppSession(dataPath, clientId),
+  ) {}
 
   pathFor(email: string): string {
     return path.join(this.root, 'users', userSlug(email))
@@ -44,7 +49,7 @@ export class UserRegistry {
     await mkdir(path.join(dir, 'wwebjs'), { recursive: true })
     const profile = new ProfileStore(path.join(dir, 'perfil.json'), email)
     const draw = new DrawStore(path.join(dir, 'sorteio.json'))
-    const whatsapp = new WhatsAppSession(path.join(dir, 'wwebjs'), slug)
+    const whatsapp = this.createSession(path.join(dir, 'wwebjs'), slug)
     const sender = new Sender(draw, whatsapp)
     const testes = new TestLog(path.join(dir, 'testes.json'))
     const runtime: UserRuntime = {
