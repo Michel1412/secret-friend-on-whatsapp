@@ -77,7 +77,7 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 
 ## MCP local
 
-`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`.
+`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`. O HTTP é sem sessão: `startMcpHttp` cria um `McpServer` e um `StreamableHTTPServerTransport` (`sessionIdGenerator: undefined`, resposta JSON) por POST. Não reutilize o transporte. Um `sessionIdGenerator` num servidor só também não basta, porque o `McpServer` aceita uma conexão. GET e DELETE devolvem 405.
 
 Tools: `get_status`, `get_qr_code`, `test_send_and_delete`, `import_list`, `export_list`, `draw`, `start_send`, `resend`, `get_members_status`, `get_history`, `break_secrecy`. Descrições em inglês. `break_secrecy` tem `destructiveHint` e passa pela mesma trava da frase. Não devolva pares nos outros tools.
 
