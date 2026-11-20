@@ -40,7 +40,7 @@ Interface: http://127.0.0.1:38472. API: http://127.0.0.1:38471.
 | --- | --- |
 | `npm run dev` | API (`tsx watch`) e Vite juntos |
 | `npm test` | Vitest, uma vez |
-| `npm run test:coverage` | Testes + cobertura v8. Piso: 90% de linhas em `shared/` e `server/`, 80% de linhas em `src/`. Ramos: 78% / 75% / 68% |
+| `npm run test:coverage` | Testes + cobertura v8. Piso: 90% de linhas em `shared/` e `server/`, 80% de linhas em `src/`. Ramos: 78% / 73% / 68% |
 | `npm run typecheck` | `tsc` da interface e do servidor |
 | `npm run build` | `vite build` em `dist/` |
 | `npm start` | Só a API |
@@ -74,6 +74,14 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 3. Se mexer no WhatsApp, use um cliente falso de `whatsapp-web.js`. Não abra Chrome no teste.
 4. Rode `npm run test:coverage`, `npm run typecheck` e `npm run build`.
 5. Atualize este arquivo e o `README.md` se o fluxo, a pasta ou o comando mudar.
+
+## MCP local
+
+`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`.
+
+Tools: `get_status`, `get_qr_code`, `test_send_and_delete`, `import_list`, `export_list`, `draw`, `start_send`, `resend`, `get_members_status`, `get_history`, `break_secrecy`. Descrições em inglês. `break_secrecy` tem `destructiveHint` e passa pela mesma trava da frase. Não devolva pares nos outros tools.
+
+Exemplo de cliente no `README.md` (`mcp.json`).
 
 ## Pull requests
 

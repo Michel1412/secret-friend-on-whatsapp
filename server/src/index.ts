@@ -275,8 +275,10 @@ export function createApp(registry: UserRegistry = new UserRegistry(config.dataD
       const mensagem = String((req.body as { mensagem?: unknown } | null)?.mensagem ?? '')
       if (!templateHasVariable(mensagem)) throw new HttpError(400, 'A mensagem precisa ter {{sorteado}} ou {{amigo}}.')
       if (mensagem.length > 1000) throw new HttpError(400, 'A mensagem está longa demais.')
-      const intervaloMs = clampSendDelay((req.body as { intervaloMs?: unknown } | null)?.intervaloMs)
-      user.sender.start(draw, mensagem, intervaloMs)
+    const intervaloMs = clampSendDelay((req.body as { intervaloMs?: unknown } | null)?.intervaloMs)
+    const rawIds = (req.body as { ids?: unknown } | null)?.ids
+    const ids = Array.isArray(rawIds) ? rawIds.map((id) => String(id)) : undefined
+    user.sender.start(draw, mensagem, intervaloMs, ids)
       res.status(202).json({ envio: user.sender.view(), sorteio: toPublicDraw(draw) })
     }),
   )
