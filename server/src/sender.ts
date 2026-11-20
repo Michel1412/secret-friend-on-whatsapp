@@ -29,16 +29,19 @@ export class Sender {
     return this.progress.ativo
   }
 
-  start(draw: StoredDraw, template: string, intervaloMs: number): void {
+  start(draw: StoredDraw, template: string, intervaloMs: number, onlyIds?: readonly string[]): void {
     if (this.progress.ativo) {
       throw new Error('Já existe um envio em andamento.')
     }
-    const queue = draw.participantes.filter((person) => person.status !== 'apagado' && !person.manter)
+    const allowed = onlyIds ? new Set(onlyIds) : null
+    const queue = draw.participantes.filter(
+      (person) => person.status !== 'apagado' && !person.manter && (!allowed || allowed.has(person.id)),
+    )
     if (queue.length === 0) {
       throw new Error('Não há mensagens pendentes para enviar ou apagar.')
     }
     this.progress = { ativo: true, feitos: 0, total: queue.length, erro: null }
-    void this.loop(draw, template, intervaloMs).catch((error) => {
+    void this.loop(draw, template, intervaloMs, onlyIds).catch((error) => {
       this.progress = {
         ...this.progress,
         ativo: false,
@@ -47,8 +50,11 @@ export class Sender {
     })
   }
 
-  private async loop(draw: StoredDraw, template: string, intervaloMs: number): Promise<void> {
-    const ids = draw.participantes.filter((person) => person.status !== 'apagado' && !person.manter).map((person) => person.id)
+  private async loop(draw: StoredDraw, template: string, intervaloMs: number, onlyIds?: readonly string[]): Promise<void> {
+    const allowed = onlyIds ? new Set(onlyIds) : null
+    const ids = draw.participantes
+      .filter((person) => person.status !== 'apagado' && !person.manter && (!allowed || allowed.has(person.id)))
+      .map((person) => person.id)
     try {
       for (let index = 0; index < ids.length; index += 1) {
         if (this.whatsapp.snapshot.status !== 'connected') {

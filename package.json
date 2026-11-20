@@ -16,11 +16,13 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "build": "vite build",
-    "start": "tsx server/src/index.ts"
+    "start": "tsx server/src/index.ts",
+    "mcp": "tsx server/src/mcp.ts"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.3",
     "@testing-library/dom": "^10.4.2",

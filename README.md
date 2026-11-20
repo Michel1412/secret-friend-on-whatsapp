@@ -50,9 +50,28 @@ npm run dev
 
 Abra [http://127.0.0.1:38472](http://127.0.0.1:38472). A API fica em [http://127.0.0.1:38471](http://127.0.0.1:38471). O Vite encaminha `/api` para ela. Sem o arquivo `.env`, os padrões abaixo já valem.
 
-`npm test` roda o Vitest. `npm run test:coverage` repete os testes com cobertura v8. O piso é 90% de linhas em `shared/` e `server/`, 80% de linhas na interface (`src/`), e ramos em 78%, 75% e 68% nessas pastas (o alvo de ramos era 90/90/80; o que o v8 mede hoje fica acima desses pisos). O workflow `ci` usa essa medição. `npm run typecheck` checa a interface e o servidor. `npm run build` gera a interface em `dist/`. `npm start` sobe só a API (`tsx server/src/index.ts`), na porta `PORT`. Ele não serve a pasta `dist/`.
+`npm test` roda o Vitest. `npm run test:coverage` repete os testes com cobertura v8. O piso é 90% de linhas em `shared/` e `server/`, 80% de linhas na interface (`src/`), e ramos em 78%, 73% e 68% nessas pastas (o alvo de ramos era 90/90/80; o que o v8 mede hoje fica acima desses pisos). O workflow `ci` usa essa medição. `npm run typecheck` checa a interface e o servidor. `npm run build` gera a interface em `dist/`. `npm start` sobe só a API (`tsx server/src/index.ts`), na porta `PORT`. Ele não serve a pasta `dist/`.
 
 O guia para agentes de código está em [AGENTS.md](AGENTS.md).
+
+`npm run mcp` sobe um servidor MCP local (stdio) que fala com a API já em execução, no e-mail de `MCP_EMAIL`. Há também um modo HTTP só em `127.0.0.1`, com `MCP_HTTP_PORT` e `MCP_TOKEN`. Exemplo de `mcp.json` para o Cursor ou o Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "papelzinho": {
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "env": {
+        "MCP_EMAIL": "ada@exemplo.test",
+        "MCP_API_BASE": "http://127.0.0.1:38471"
+      }
+    }
+  }
+}
+```
+
+O tool `break_secrecy` revela os pares e pede a frase `quero quebrar o sigilo`. Os outros tools não devolvem o sorteio.
 
 ### Variáveis do `.env.example`
 
