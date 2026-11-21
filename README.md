@@ -54,7 +54,7 @@ Abra [http://127.0.0.1:38472](http://127.0.0.1:38472). A API fica em [http://127
 
 O guia para agentes de código está em [AGENTS.md](AGENTS.md).
 
-`npm run mcp` sobe um servidor MCP local (stdio) que fala com a API já em execução, no e-mail de `MCP_EMAIL`. Há também um modo HTTP só em `127.0.0.1`, com `MCP_HTTP_PORT` e `MCP_TOKEN`. Exemplo de `mcp.json` para o Cursor ou o Claude Desktop:
+`npm run mcp` sobe um servidor MCP local (stdio) que fala com a API já em execução, no e-mail de `MCP_EMAIL`. Há também um modo HTTP só em `127.0.0.1`, com `MCP_HTTP_PORT` e `MCP_TOKEN`. Esse HTTP não guarda sessão: cada POST cria um servidor e um transporte novos. Reusar um transporte sem id de sessão faz o segundo POST (por exemplo `tools/list` depois do `initialize`) responder 500. GET e DELETE respondem 405. Exemplo de `mcp.json` para o Cursor ou o Claude Desktop:
 
 ```json
 {
