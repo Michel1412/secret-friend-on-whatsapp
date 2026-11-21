@@ -52,7 +52,7 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 - `src/` — React. `App.tsx` é a tela. `components/` tem QR, cadastro, importação, modelo, sigilo e envio.
 - `server/src/` — Express, registro, sessão WhatsApp, fila de envio, arquivos do usuário.
 - `shared/` — regras usadas pela tela e pela API: telefone, e-mail, modelo, derangement, sigilo, importação, identidade do próprio número, gate de verificação.
-- `data/` — criada em uso, na raiz, de propósito (sessões antigas continuam valendo). Não vai no git. O Vite não escaneia essa pasta: `optimizeDeps.entries` é só `index.html`.
+- `data/` — criada em uso, na raiz, de propósito (sessões antigas continuam valendo). Não vai no git. O Vite não escaneia essa pasta: `optimizeDeps.entries` é só `index.html`. O `server.fs.deny` ancora `data/`, `.wwebjs_auth/` e `.wwebjs_cache/` na raiz do projeto (e um `DATA_DIR` absoluto no próprio caminho). Não use `**/dist/**` nem `**/coverage/**` nessa lista: o cliente do Vite fica em `node_modules/vite/dist/` e a tela de dev abre em branco.
 - `AGENTS.md`, `CONTRIBUTING.md`, `LICENSE`, `NOTICE`.
 
 ## Convenções
