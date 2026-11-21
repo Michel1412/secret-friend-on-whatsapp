@@ -1,10 +1,17 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { config as loadEnv } from 'dotenv'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assertLocalBearer, type PapelApi, RunningAppClient } from './mcp-api.ts'
 import { createPapelServer } from './mcp-tools.ts'
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+
+export function loadMcpEnv(envFile = path.join(projectRoot, '.env')): void {
+  loadEnv({ path: envFile })
+}
 
 /**
  * HTTP local, sem sessão.
@@ -69,6 +76,7 @@ async function serveStateless(api: PapelApi, req: http.IncomingMessage, res: htt
 }
 
 async function main() {
+  loadMcpEnv()
   const email = process.env.MCP_EMAIL?.trim()
   if (!email) {
     console.error('Defina MCP_EMAIL com o e-mail já usado na interface.')

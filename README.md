@@ -54,7 +54,7 @@ Abra [http://127.0.0.1:38472](http://127.0.0.1:38472). A API fica em [http://127
 
 O guia para agentes de código está em [AGENTS.md](AGENTS.md).
 
-`npm run mcp` sobe um servidor MCP local (stdio) que fala com a API já em execução, no e-mail de `MCP_EMAIL`. Há também um modo HTTP só em `127.0.0.1`, com `MCP_HTTP_PORT` e `MCP_TOKEN`. Esse HTTP não guarda sessão: cada POST cria um servidor e um transporte novos. Reusar um transporte sem id de sessão faz o segundo POST (por exemplo `tools/list` depois do `initialize`) responder 500. GET e DELETE respondem 405. Exemplo de `mcp.json` para o Cursor ou o Claude Desktop:
+`npm run mcp` sobe um servidor MCP local (stdio) que fala com a API já em execução, no e-mail de `MCP_EMAIL`. O processo lê o `.env` da raiz. Há também um modo HTTP só em `127.0.0.1`, com `MCP_HTTP_PORT` e `MCP_TOKEN`. Esse HTTP não guarda sessão: cada POST cria um servidor e um transporte novos. Reusar um transporte sem id de sessão faz o segundo POST (por exemplo `tools/list` depois do `initialize`) responder 500. GET e DELETE respondem 405. Exemplo de `mcp.json` em modo stdio, para o Claude Desktop ou para o Cursor iniciar o comando:
 
 ```json
 {
@@ -73,6 +73,16 @@ O guia para agentes de código está em [AGENTS.md](AGENTS.md).
 
 O tool `break_secrecy` revela os pares e pede a frase `quero quebrar o sigilo`. Os outros tools não devolvem o sorteio.
 
+## Usando o MCP no Cursor
+
+O Cursor na mesma máquina fala com o MCP HTTP em [http://127.0.0.1:38473/mcp](http://127.0.0.1:38473/mcp). O header é `Authorization: Bearer` seguido do token. A sintaxe `${env:NOME}` em `command`, `args`, `env`, `url` e `headers` é a documentada pelo Cursor ([Config interpolation](https://cursor.com/docs/mcp)): o processo do Cursor substitui a variável. No HTTP, `MCP_TOKEN` vem do ambiente que inicia o Cursor. O campo `envFile` do `mcp.json` vale para o modo stdio.
+
+1. Suba o aplicativo com `npm run dev`. A API fica em [http://127.0.0.1:38471](http://127.0.0.1:38471).
+2. Defina `MCP_TOKEN` (e `MCP_EMAIL`, `MCP_HTTP_PORT=38473`) no `.env`. O `npm run mcp` lê esse arquivo. No `.env.example` o token de teste é `token-dev-mcp-cursor`. Esse valor serve só para teste local. Troque-o antes de usar de verdade. Use o mesmo token no ambiente do Cursor, para o `${env:MCP_TOKEN}` do header.
+3. Noutro terminal, rode `npm run mcp`. Com porta e token, o processo escuta só em `127.0.0.1`.
+4. Copie a configuração de [`.cursor/mcp.json`](.cursor/mcp.json) se o Cursor não estiver aberto nesta pasta (por exemplo para `~/.cursor/mcp.json`; no Windows, `%USERPROFILE%\.cursor\mcp.json`). Com o projeto aberto, o Cursor já lê esse arquivo. Ele aponta para `http://127.0.0.1:38473/mcp` e envia `Authorization: Bearer ${env:MCP_TOKEN}`. O arquivo vai no git porque o token fica na variável, fora do JSON.
+5. Recarregue a janela do Cursor (paleta de comandos: **Developer: Reload Window**). O servidor `papelzinho` lista estes tools: `get_status`, `get_qr_code`, `test_send_and_delete`, `import_list`, `export_list`, `draw`, `start_send`, `resend`, `get_members_status`, `get_history` e `break_secrecy`.
+
 ### Variáveis do `.env.example`
 
 | Variável | Padrão | O que faz |
@@ -86,6 +96,10 @@ O tool `break_secrecy` revela os pares e pede a frase `quero quebrar o sigilo`. 
 | `DELETE_FOR_ME_DELAY_MS` | `1500` | Espera depois do envio, antes de `message.delete(false)`. Limitada entre 500 e 10000. |
 | `ACK_TIMEOUT_MS` | `6000` | Lida e limitada entre 1000 e 30000 em `config.ts`. O envio atual não consulta esse tempo. |
 | `DELETE_CONFIRM_TIMEOUT_MS` | `8000` | Lida e limitada entre 1000 e 30000 em `config.ts`. A confirmação do apagar não usa esse tempo: espera 600 ms, olha `message_revoke_me` ou `getMessageById`, e tenta até 3 vezes. |
+| `MCP_EMAIL` | comentada | E-mail da sessão que o `npm run mcp` usa. É o mesmo e-mail da interface. |
+| `MCP_API_BASE` | `http://127.0.0.1:38471` | URL da API. Se a variável estiver vazia, o código usa esse endereço. |
+| `MCP_HTTP_PORT` | comentada (`38473`) | Se definida, o mesmo processo do MCP também escuta HTTP só em `127.0.0.1`, no caminho `/mcp`. |
+| `MCP_TOKEN` | comentada (`token-dev-mcp-cursor`) | Bearer exigido pelo HTTP. O valor do exemplo serve só para teste local e deve ser trocado. O Cursor lê o mesmo nome pela interpolação `${env:MCP_TOKEN}`. |
 | `LOG_LEVEL` | `warn` | Nível do Pino: `silent`, `warn`, `info` ou `debug`. `info` mostra jid, id da mensagem e o passo do teste de apagar. O texto da mensagem e o nome sorteado não entram no log. |
 
 ## Estrutura de pastas
@@ -99,6 +113,7 @@ secret-friend-on-whatsapp/
 ├── CONTRIBUTING.md           pull requests, DCO e testes
 ├── AGENTS.md                 guia para agentes de código
 ├── .github/workflows/ci.yml  GitHub Actions, job ci
+├── .cursor/mcp.json          Cursor: MCP HTTP em 127.0.0.1:38473, token via ${env:MCP_TOKEN}
 ├── .env.example              variáveis documentadas acima
 ├── .gitignore                ignora node_modules, dist, .env e data/
 ├── index.html                título da aba: Papelzinho

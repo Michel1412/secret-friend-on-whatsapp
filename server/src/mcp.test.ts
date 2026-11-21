@@ -2,11 +2,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { describe, expect, it, vi } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { assertLocalBearer, isLoopback, RunningAppClient } from './mcp-api.ts'
-import { startMcpHttp } from './mcp.ts'
+import { loadMcpEnv, startMcpHttp } from './mcp.ts'
 import { createPapelServer } from './mcp-tools.ts'
 import type { PapelApi } from './mcp-api.ts'
 
@@ -277,5 +278,39 @@ describe('MCP local', () => {
     await mcp.close()
     await server.close()
     await rm(root, { recursive: true, force: true })
+  })
+
+  it('aponta o Cursor para o MCP HTTP e guarda o token de teste só no exemplo', async () => {
+    const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+    const cursorConfig = JSON.parse(await readFile(path.join(root, '.cursor/mcp.json'), 'utf8')) as {
+      mcpServers: { papelzinho: { url: string; headers: { Authorization: string } } }
+    }
+    expect(cursorConfig.mcpServers.papelzinho.url).toBe('http://127.0.0.1:38473/mcp')
+    expect(cursorConfig.mcpServers.papelzinho.headers.Authorization).toBe('Bearer ${env:MCP_TOKEN}')
+    const rawConfig = await readFile(path.join(root, '.cursor/mcp.json'), 'utf8')
+    expect(rawConfig).not.toContain('token-dev-mcp-cursor')
+    const example = await readFile(path.join(root, '.env.example'), 'utf8')
+    expect(example).toContain('MCP_TOKEN=token-dev-mcp-cursor')
+  })
+
+  it('lê MCP_TOKEN de um arquivo de ambiente e preserva variável já definida', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'papel-mcp-env-'))
+    const file = path.join(dir, '.env')
+    await writeFile(file, 'MCP_TOKEN=token-dev-mcp-cursor\nMCP_FROM_FILE=arquivo\n', 'utf8')
+    const previousToken = process.env.MCP_TOKEN
+    const previousFromFile = process.env.MCP_FROM_FILE
+    delete process.env.MCP_TOKEN
+    process.env.MCP_FROM_FILE = 'processo'
+    try {
+      loadMcpEnv(file)
+      expect(process.env.MCP_TOKEN).toBe('token-dev-mcp-cursor')
+      expect(process.env.MCP_FROM_FILE).toBe('processo')
+    } finally {
+      if (previousToken === undefined) delete process.env.MCP_TOKEN
+      else process.env.MCP_TOKEN = previousToken
+      if (previousFromFile === undefined) delete process.env.MCP_FROM_FILE
+      else process.env.MCP_FROM_FILE = previousFromFile
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })
