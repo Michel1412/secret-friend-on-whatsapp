@@ -77,11 +77,13 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 
 ## MCP local
 
-`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`.
+`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele lê o `.env` da raiz e entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`.
+
+No Cursor, `.cursor/mcp.json` aponta para `http://127.0.0.1:38473/mcp` e manda `Authorization: Bearer ${env:MCP_TOKEN}`. O Cursor interpola `${env:NOME}` em `headers`. O valor de exemplo do token, só para teste local, está em `.env.example`.
 
 Tools: `get_status`, `get_qr_code`, `test_send_and_delete`, `import_list`, `export_list`, `draw`, `start_send`, `resend`, `get_members_status`, `get_history`, `break_secrecy`. Descrições em inglês. `break_secrecy` tem `destructiveHint` e passa pela mesma trava da frase. Não devolva pares nos outros tools.
 
-Exemplo de cliente no `README.md` (`mcp.json`).
+Exemplo de cliente stdio no `README.md`. O HTTP do Cursor está na seção "Usando o MCP no Cursor".
 
 ## Pull requests
 
