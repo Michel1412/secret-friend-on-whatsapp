@@ -77,7 +77,7 @@ O workflow `ci` (job `ci`) roda `npm ci`, `npm run test:coverage`, `npm run type
 
 ## MCP local
 
-`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele lê o `.env` da raiz e entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`.
+`npm run mcp` sobe o servidor MCP em stdio (`@modelcontextprotocol/sdk`). Ele lê o `.env` da raiz e entra na API com `MCP_EMAIL` (`MCP_API_BASE`, padrão `http://127.0.0.1:38471`). A API precisa estar rodando. Com `MCP_HTTP_PORT` e `MCP_TOKEN`, o mesmo processo também escuta só em `127.0.0.1` e exige `Authorization: Bearer`. O HTTP é sem sessão: `startMcpHttp` cria um `McpServer` e um `StreamableHTTPServerTransport` (`sessionIdGenerator: undefined`, resposta JSON) por POST. Não reutilize o transporte. Um `sessionIdGenerator` num servidor só também não basta, porque o `McpServer` aceita uma conexão. GET e DELETE devolvem 405.
 
 No Cursor, `.cursor/mcp.json` aponta para `http://127.0.0.1:38473/mcp` e manda `Authorization: Bearer ${env:MCP_TOKEN}`. O Cursor interpola `${env:NOME}` em `headers`. O valor de exemplo do token, só para teste local, está em `.env.example`.
 

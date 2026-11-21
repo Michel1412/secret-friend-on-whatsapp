@@ -1,4 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { describe, expect, it, vi } from 'vitest'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -6,7 +7,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assertLocalBearer, isLoopback, RunningAppClient } from './mcp-api.ts'
-import { loadMcpEnv } from './mcp.ts'
+import { loadMcpEnv, startMcpHttp } from './mcp.ts'
 import { createPapelServer } from './mcp-tools.ts'
 import type { PapelApi } from './mcp-api.ts'
 
@@ -165,6 +166,49 @@ describe('MCP local', () => {
     expect(api.sigiloCalls).toEqual(['nao', 'quero quebrar o sigilo'])
     await client.close()
     await server.close()
+  })
+
+  it('no HTTP, initialize, tools/list e uma chamada usam um servidor por POST', async () => {
+    const api = fakeApi()
+    const listener = startMcpHttp(api, 0, 'segredo')
+    await new Promise<void>((resolve) => listener.once('listening', () => resolve()))
+    const address = listener.address()
+    const port = address && typeof address === 'object' ? address.port : 0
+    const url = `http://127.0.0.1:${port}/mcp`
+
+    const denied = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+      body: '{}',
+    })
+    expect(denied.status).toBe(401)
+    const get = await fetch(url, { headers: { Authorization: 'Bearer segredo' } })
+    expect(get.status).toBe(405)
+
+    const open = () => {
+      const transport = new StreamableHTTPClientTransport(new URL(url), {
+        requestInit: { headers: { Authorization: 'Bearer segredo' } },
+      })
+      const client = new Client({ name: 'teste-http', version: '0' })
+      return { transport, client }
+    }
+
+    const first = open()
+    await first.client.connect(first.transport)
+    const listed = await first.client.listTools()
+    expect(listed.tools.map((tool) => tool.name)).toContain('get_status')
+    const status = await first.client.callTool({ name: 'get_status', arguments: {} })
+    expect(JSON.stringify(status)).toMatch(/Verificado: sim/)
+    expect(first.transport.sessionId).toBeUndefined()
+
+    const second = open()
+    await second.client.connect(second.transport)
+    const again = await second.client.callTool({ name: 'get_status', arguments: {} })
+    expect(JSON.stringify(again)).toMatch(/Verificado: sim/)
+
+    await first.client.close()
+    await second.client.close()
+    await new Promise<void>((resolve, reject) => listener.close((error) => (error ? reject(error) : resolve())))
   })
 
   it('recusa HTTP fora do loopback ou sem bearer', () => {
