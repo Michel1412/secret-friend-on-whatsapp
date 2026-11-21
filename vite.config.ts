@@ -1,17 +1,19 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
+import { isRuntimePath, runtimeIgnoreGlobs } from './shared/runtime-ignore'
+
+const VITE_FS_DENY = ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', ...runtimeIgnoreGlobs('data')]
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiPort = env.PORT || '38471'
   const clientPort = Number(env.CLIENT_PORT || 38472)
-  const dataDir = (env.DATA_DIR || 'data').replace(/\\/g, '/').replace(/^\.\/|\/$/g, '')
-  const watchIgnored = ['**/data/**', '**/.wwebjs_auth/**', '**/.wwebjs_cache/**']
-  if (dataDir && dataDir !== 'data' && !dataDir.includes(':')) {
-    watchIgnored.push(`**/${dataDir}/**`)
-  }
+  const dataDir = env.DATA_DIR || 'data'
+  const ignoreGlobs = runtimeIgnoreGlobs(dataDir)
+  const dataRoot = path.resolve(process.cwd(), dataDir)
 
   return {
     plugins: [react(), tailwindcss()],
@@ -20,12 +22,22 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    // Only the app entry. Without this, Vite globs every *.html, including Edge profile pages under data/.
+    optimizeDeps: {
+      entries: ['index.html'],
+    },
     server: {
       host: '0.0.0.0',
       port: clientPort,
       strictPort: true,
+      fs: {
+        deny: VITE_FS_DENY,
+      },
       watch: {
-        ignored: watchIgnored,
+        ignored: [
+          ...ignoreGlobs,
+          (watched: string) => isRuntimePath(watched, dataRoot),
+        ],
       },
       proxy: {
         '/api': {
