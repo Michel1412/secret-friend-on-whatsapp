@@ -86,6 +86,11 @@ Exemplo de cliente no `README.md` (`mcp.json`).
 ## Pull requests
 
 - Só para `main`. Sem push direto em `main`.
+- Nome da branch, em minúsculas e kebab-case:
+  - funcionalidade nova: `feature/<descricao-curta>`
+  - correção: `bug/<descricao-curta>`
+  - Exemplo: `feature/branch-naming-convention`, `bug/qr-timeout`.
+- Não use outros prefixos (`cursor/`, `fix/`, nomes soltos). Um ruleset do GitHub pode exigir o padrão `^(feature|bug)/[a-z0-9]+(-[a-z0-9]+)*$` na branch de origem.
 - Cada commit com `git commit -s` (`Signed-off-by`, DCO). Veja `CONTRIBUTING.md`.
 - Contribuição sob AGPL-3.0-only. Preserve o `NOTICE`.
 - O check `ci` precisa passar.
