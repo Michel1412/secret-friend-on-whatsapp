@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "concurrently -k -n api,web -c green,blue \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": "tsx watch --exclude \"./data/**\" --exclude \"**/.wwebjs_auth/**\" --exclude \"**/.wwebjs_cache/**\" server/src/index.ts",
+    "dev:api": "tsx watch --exclude \"./data/**\" --exclude \"./coverage/**\" --exclude \"./dist/**\" --exclude \"**/.wwebjs_auth/**\" --exclude \"**/.wwebjs_cache/**\" server/src/index.ts",
     "dev:web": "vite --host 0.0.0.0 --strictPort",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
