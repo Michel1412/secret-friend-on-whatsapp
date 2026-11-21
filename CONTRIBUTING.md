@@ -2,6 +2,17 @@
 
 Pull requests entram somente na branch `main`. Não envie commits direto para `main`.
 
+## Nome da branch
+
+Use só estes prefixos, em minúsculas e com hífens:
+
+| Tipo | Padrão | Exemplo |
+| --- | --- | --- |
+| Funcionalidade nova | `feature/<descricao-curta>` | `feature/historico-de-envio` |
+| Correção | `bug/<descricao-curta>` | `bug/qr-timeout` |
+
+Não abra pull request a partir de `main`, de `cursor/…`, de `fix/…` nem de um nome sem prefixo. O padrão cabe num ruleset do GitHub na branch de origem: `^(feature|bug)/[a-z0-9]+(-[a-z0-9]+)*$`.
+
 ## Licença
 
 Contribuições são aceitas sob a GNU Affero General Public License v3.0 apenas (AGPL-3.0-only), a mesma licença do projeto. O texto está em [LICENSE](LICENSE). Autoria, marcas e o aviso de preservação estão em [NOTICE](NOTICE).

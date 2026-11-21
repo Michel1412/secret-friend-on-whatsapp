@@ -117,7 +117,7 @@ secret-friend-on-whatsapp/
 ├── .env.example              variáveis documentadas acima
 ├── .gitignore                ignora node_modules, dist, .env e data/
 ├── index.html                título da aba: Papelzinho
-├── vite.config.ts            porta da interface, proxy /api, watch sem data/
+├── vite.config.ts            porta da interface, proxy /api, sem varrer data/
 ├── vitest.config.ts
 ├── tsconfig.json             interface
 ├── tsconfig.server.json      API
@@ -247,7 +247,7 @@ O apagar nunca roda quando o número do participante é o da própria instância
 - **Navegador órfão.** Se o `tsx watch` ou o `concurrently -k` morrer no meio, o Chrome pode continuar segurando `data/users/<id>/wwebjs/session-<id>`. A próxima abertura, se receber “The browser is already running for …”, mata só processos do Chrome/Edge cuja linha de comando contém aquele perfil **e** que não são filhos deste processo. Em seguida apaga `SingletonLock`, `SingletonSocket`, `SingletonCookie` e `lockfile`, se nenhum Chrome nosso ainda estiver nesse perfil, e tenta uma vez de novo. A tela mostra o erro real, sem o caminho do usuário.
 - **`CHROME_PATH`.** Se o Chrome não abre, aponte o `.exe` ou o binário. No Windows os caminhos padrão de Chrome e Edge já são procurados. O log `navegador escolhido` mostra o `executablePath`.
 - **`PUPPETEER_CACHE_DIR`.** Use só se o Puppeteer for baixar o Chromium e o disco padrão estiver cheio. Defina antes do `npm install`. Com Chrome ou Edge instalados, o app não precisa desse download.
-- **Vite e `EBUSY`.** O watch do Vite ignora `data/`, `.wwebjs_auth` e `.wwebjs_cache`. O `npm run dev:api` usa `tsx watch --exclude` nos mesmos caminhos. Um `DATA_DIR` relativo diferente de `data` também entra na lista do Vite, desde que não seja um caminho de outro disco.
+- **Vite e a pasta `data/`.** O padrão continua `data/` na raiz, para não perder sessões já pareadas. O Vite não pode varrer essa pasta: o perfil do Edge/Chrome guarda HTML (`Edge Shopping`, `Edge Wallet`) e o scan de dependências trata cada `*.html` como entrada. Isso quebra o `npm run dev` com `Failed to scan for dependencies` e `Could not resolve import("./json/i18n-ec/**/*/strings.json")`. O `optimizeDeps.entries` fica só em `index.html`. O watch e o `server.fs.deny` ignoram `data/`, `.wwebjs_auth/`, `.wwebjs_cache/`, `coverage/` e `dist/`, inclusive com caminho Windows (`E:\...\data\...`). O `tsx watch`, o Vitest e o `tsc` também ficam de fora dessas pastas. Um `DATA_DIR` diferente entra na mesma lista.
 
 ## Deploy
 
