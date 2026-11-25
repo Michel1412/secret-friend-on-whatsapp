@@ -11,7 +11,11 @@ export function boundedInteger(name: string, fallback: number, min: number, max:
   return Math.min(max, Math.max(min, Math.round(parsed)))
 }
 
-/** Shown in WhatsApp → Aparelhos conectados (whatsapp-web.js deviceName / browserName). */
+/**
+ * Nome em Aparelhos conectados. Não entra no construtor do Client: o
+ * setDeviceName da whatsapp-web.js quebra se o módulo do WhatsApp Web vier null.
+ * aplicarNomeDoAparelho grava o nome só quando o módulo existe.
+ */
 export const deviceName = 'Papelzinho - ZAP'
 export const browserName = 'Chrome'
 

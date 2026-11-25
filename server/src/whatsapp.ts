@@ -12,6 +12,7 @@ import {
   userDataDirFromError,
 } from './browser-lock.ts'
 import { config, browserName, deviceName } from './config.ts'
+import { instalarNomeDoAparelho, type ClienteNome } from './device-name.ts'
 import { resolveChromePath } from './chrome-path.ts'
 import { SendFailure, toSeconds, type DeliveryResult, type OutboundKey } from '../../shared/deliver.ts'
 import { sameAccount, type AccountRef } from '../../shared/identity.ts'
@@ -349,8 +350,6 @@ export class WhatsAppSession {
   private createClient(executablePath: string | undefined): WaClient {
     return new Client({
       authStrategy: new LocalAuth({ clientId: this.clientId, dataPath: this.dataPath }),
-      deviceName,
-      browserName,
       puppeteer: {
         headless: true,
         args: ['--no-sandbox', '--disable-dev-shm-usage'],
@@ -385,6 +384,10 @@ export class WhatsAppSession {
       const client = this.createClient(executablePath)
       this.client = client
       this.wire(client, generation)
+      const pararNome = instalarNomeDoAparelho(client as unknown as ClienteNome, deviceName, browserName, (nivel, mensagem, extra) => {
+        if (nivel === 'info') logger.info(extra, mensagem)
+        else logger.warn(extra, mensagem)
+      })
       try {
         await client.initialize()
         return
@@ -409,6 +412,8 @@ export class WhatsAppSession {
           continue
         }
         break
+      } finally {
+        pararNome()
       }
     }
     if (generation !== this.generation) return

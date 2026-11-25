@@ -6,7 +6,7 @@ Web app to run a Secret Santa (amigo secreto) over WhatsApp: connects a number b
 
 Aplicativo web de amigo secreto pelo WhatsApp: conecta um número pelo QR, sorteia pares sem ninguém tirar a si mesmo, manda para cada pessoa só o nome que ela tirou e apaga essa mensagem para quem enviou, para o sorteio continuar secreto até para quem organiza.
 
-A marca na tela é **Papelzinho**, ao lado de um presente azul com laço (`src/components/GiftLogo.tsx`, o mesmo desenho do `public/favicon.svg`). O tema é festa sobre fundo neutro: papel quente, texto escuro e acentos de confete (azul, verde, âmbar, coral e violeta), sem fundo colorido. As cores ficam só em `src/index.css`. No WhatsApp, em Aparelhos conectados, o aparelho aparece como **Papelzinho - ZAP** (Chrome).
+A marca na tela é **Papelzinho**, ao lado de um presente azul com laço (`src/components/GiftLogo.tsx`, o mesmo desenho do `public/favicon.svg`). O tema é festa sobre fundo neutro: papel quente, texto escuro e acentos de confete (azul, verde, âmbar, coral e violeta), sem fundo colorido. As cores ficam só em `src/index.css`. No WhatsApp, em Aparelhos conectados, o app tenta mostrar o aparelho como **Papelzinho - ZAP** (Chrome). Se essa versão do WhatsApp Web não entregar o módulo do navegador, o pareamento segue e o celular mostra o nome padrão.
 
 ## Visão geral e funcionalidades
 
@@ -204,7 +204,7 @@ Para abrir a interface compilada é preciso um servidor estático na frente, com
 1. Abra [http://127.0.0.1:38472](http://127.0.0.1:38472) e entre com um e-mail. Não há senha.
 2. Clique em **Gerar QR**. A primeira abertura sobe o navegador headless; pode levar alguns segundos. Se o QR já estiver na tela, o botão passa a **Atualizar QR**.
 3. No celular: WhatsApp → **Aparelhos conectados** → **Conectar um aparelho**, e leia o QR.
-4. O aparelho aparece como **Papelzinho - ZAP**. Espere o selo **Verificado** (o app do celular precisa ficar aberto até `getChats()` terminar).
+4. O aparelho aparece como **Papelzinho - ZAP** quando o WhatsApp Web deixa renomear; se não deixar, fica o nome padrão do navegador. Espere o selo **Verificado** (o app do celular precisa ficar aberto até `getChats()` terminar).
 5. Cadastre a turma, sorteie e envie. Enviar e **Testar apagar** seguem bloqueados sem o selo.
 
 **Desconectar** chama `POST /api/whatsapp/logout` e despareia (recusa se houver envio em andamento). **Sair** chama `DELETE /api/sessao`: apaga o cookie e fecha o navegador daquela sessão, e **deixa os arquivos** em `data/`.
