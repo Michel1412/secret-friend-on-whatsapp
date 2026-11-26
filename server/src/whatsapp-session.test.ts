@@ -15,6 +15,7 @@ const state = vi.hoisted(() => {
         throw new Error('The browser is already running for /tmp/papel-nenhum. Use a different profile')
       }
       if (state.mode === 'fail') throw new Error('chrome ausente')
+      if (state.mode === 'nome') await this.setDeviceName?.()
     })
     destroy = vi.fn(async () => undefined)
     logout = vi.fn(async () => {
@@ -30,8 +31,21 @@ const state = vi.hoisted(() => {
     }))
     getMessageById = vi.fn(async () => null as { id: { _serialized: string }; delete: () => Promise<void> } | null)
     getChats = vi.fn(async () => [{ id: 'chat' }])
-    constructor() {
+    setDeviceName?: () => Promise<void>
+    pupPage?: {
+      evaluate: (fn: (...args: unknown[]) => unknown, ...args: unknown[]) => Promise<unknown>
+      waitForFunction?: () => Promise<unknown>
+    } | null
+    constructor(public options?: { deviceName?: string; browserName?: string }) {
+      state.lastOptions = options
       state.clients.push(this)
+      if (state.withDeviceHook) {
+        this.setDeviceName = vi.fn(async () => undefined)
+        this.pupPage = {
+          waitForFunction: vi.fn(async () => true),
+          evaluate: vi.fn(async (fn: (...args: unknown[]) => unknown, ...args: unknown[]) => fn(...args)),
+        }
+      }
     }
     on(event: string, listener: (...args: unknown[]) => void) {
       this.handlers.set(event, listener)
@@ -44,7 +58,9 @@ const state = vi.hoisted(() => {
     }
   }
   return {
-    mode: 'ok' as 'ok' | 'retry' | 'fail',
+    mode: 'ok' as 'ok' | 'retry' | 'fail' | 'nome',
+    withDeviceHook: false,
+    lastOptions: undefined as { deviceName?: string; browserName?: string } | undefined,
     clients: [] as FakeClient[],
     FakeClient,
   }
@@ -59,14 +75,17 @@ vi.mock('whatsapp-web.js', () => ({
   },
 }))
 
-import { config } from './config.ts'
+import { browserName, deviceName, config } from './config.ts'
 import { WhatsAppSession } from './whatsapp.ts'
 
 const dirs: string[] = []
 
 afterEach(async () => {
   state.mode = 'ok'
+  state.withDeviceHook = false
+  state.lastOptions = undefined
   state.clients.length = 0
+  delete (globalThis as { require?: unknown }).require
   config.deleteDelayMs = 0
   await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
 })
@@ -213,5 +232,33 @@ describe('sessão WhatsApp com cliente falso', () => {
     client.getChats.mockRejectedValueOnce(new Error('sync'))
     client.emit('ready')
     await new Promise((resolve) => setTimeout(resolve, 20))
+  })
+
+  it('não manda deviceName para a lib e aplica o nome antes do QR', async () => {
+    const modulo = { info: () => ({ name: 'Chrome', os: 'Linux', ua: 'ua' }) }
+    ;(globalThis as { require?: unknown }).require = (nome: string) => (nome === 'WAWebMiscBrowserUtils' ? modulo : null)
+    state.withDeviceHook = true
+    state.mode = 'nome'
+    const { session, client } = await start()
+    expect(state.lastOptions?.deviceName).toBeUndefined()
+    expect(state.lastOptions?.browserName).toBeUndefined()
+    expect(deviceName).toBe('Papelzinho - ZAP')
+    expect(browserName).toBe('Chrome')
+    expect(modulo.info()).toMatchObject({ os: 'Papelzinho - ZAP', name: 'Chrome', ua: 'ua' })
+    expect(session.snapshot.error).toBeNull()
+    client.emit('qr', 'qr-nome')
+    await vi.waitFor(() => expect(session.snapshot.status).toBe('qr'))
+  })
+
+  it('abre o QR mesmo quando o módulo do aparelho não existe', async () => {
+    ;(globalThis as { require?: unknown }).require = () => null
+    state.withDeviceHook = true
+    state.mode = 'nome'
+    const { session, client } = await start()
+    expect(session.snapshot.error).toBeNull()
+    expect(session.snapshot.status).toBe('connecting')
+    client.emit('qr', 'qr-sem-modulo')
+    await vi.waitFor(() => expect(session.snapshot.qrDataUrl).toMatch(/^data:image/))
+    expect(session.snapshot.status).toBe('qr')
   })
 })
