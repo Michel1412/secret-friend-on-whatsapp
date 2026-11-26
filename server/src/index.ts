@@ -154,7 +154,10 @@ export function createApp(registry: UserRegistry = new UserRegistry(config.dataD
     '/api/whatsapp/connect',
     asyncRoute(async (req, res) => {
       const user = await currentUser(req)
-      await user.whatsapp.connect(true)
+      const abertura = user.whatsapp.connect(true)
+      void abertura.catch((error) => {
+        logger.warn({ message: error instanceof Error ? error.message : 'erro desconhecido' }, 'abertura do whatsapp')
+      })
       res.json(user.whatsapp.snapshot)
     }),
   )

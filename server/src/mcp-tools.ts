@@ -38,8 +38,9 @@ export function registerPapelTools(server: McpServer, api: PapelApi) {
     async () => {
       try {
         const status = await api.whatsapp()
+        const etapa = status.etapa ? ` Etapa: ${status.etapa}` : ''
         return text(
-          `Conexão: ${status.status}. Verificado: ${status.appStateReady ? 'sim' : 'não'}. Número: ${status.phone ?? 'nenhum'}. ${status.error ?? ''}`.trim(),
+          `Conexão: ${status.status}. Verificado: ${status.appStateReady ? 'sim' : 'não'}. Número: ${status.phone ?? 'nenhum'}. ${status.error ?? ''}${etapa}`.trim(),
         )
       } catch (error) {
         return fail(error)
@@ -57,7 +58,14 @@ export function registerPapelTools(server: McpServer, api: PapelApi) {
       try {
         let status = await api.whatsapp()
         if (!status.qrDataUrl && status.status !== 'connected') status = await api.connect()
-        if (!status.qrDataUrl) return text('Não há QR agora. Se o status for connected, o número já está pareado.')
+        for (let i = 0; i < 8 && !status.qrDataUrl && status.status === 'connecting' && !status.error; i += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 400))
+          status = await api.whatsapp()
+        }
+        if (!status.qrDataUrl) {
+          const etapa = status.etapa ? ` ${status.etapa}` : ''
+          return text(`Não há QR agora.${etapa} Se o status for connected, o número já está pareado.`)
+        }
         const match = /^data:(.+);base64,(.+)$/.exec(status.qrDataUrl)
         return {
           content: [

@@ -38,7 +38,9 @@ export function ConnectionCard({
   const [testPhone, setTestPhone] = useState('')
   const status = wa?.status
   const connected = status === 'connected'
+  const gerando = status === 'connecting'
   const phone = displayPhone(wa?.phone ?? null)
+  const etapa = wa?.etapa || (gerando ? 'Preparando o QR…' : null)
 
   return (
     <section className="card connection" aria-labelledby="titulo-conexao">
@@ -86,7 +88,7 @@ export function ConnectionCard({
             </div>
           ) : (
             <p className="small muted" role="status">
-              {!wa ? 'Consultando a sessão…' : status === 'connecting' ? 'Preparando o QR…' : 'Clique em Gerar QR para conectar.'}
+              {!wa ? 'Consultando a sessão…' : etapa || 'Clique em Gerar QR para conectar.'}
             </p>
           )}
           <ol className="small muted" style={{ margin: 0, paddingLeft: '1.1rem' }}>
@@ -109,8 +111,8 @@ export function ConnectionCard({
             Desconectar
           </Button>
         ) : (
-          <Button onClick={onConnect} disabled={busy}>
-            {wa?.qrDataUrl ? 'Atualizar QR' : 'Gerar QR'}
+          <Button onClick={onConnect} disabled={busy || gerando}>
+            {gerando ? 'Gerando QR…' : wa?.error ? 'Tentar de novo' : wa?.qrDataUrl ? 'Atualizar QR' : 'Gerar QR'}
           </Button>
         )}
       </div>

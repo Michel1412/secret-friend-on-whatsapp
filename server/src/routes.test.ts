@@ -215,4 +215,31 @@ describe('rotas HTTP', () => {
     const loggedOut = await request(app).post('/api/whatsapp/logout').set('Cookie', cookie)
     expect(loggedOut.body.status).toBe('disconnected')
   })
+
+  it('responde o connect na hora, com a etapa, sem esperar o navegador', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'papel-api-'))
+    dirs.push(root)
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const registry = new UserRegistry(root, () => {
+      const session = new StubSession()
+      session.connect = vi.fn(async () => {
+        session.snapshot = { ...blank(), status: 'connecting', etapa: 'Abrindo o navegador…' }
+        await gate
+        session.snapshot = { ...blank(), status: 'qr', qrDataUrl: 'data:image/gif;base64,AAAA', etapa: 'QR pronto.' }
+      })
+      return session
+    })
+    const app = createApp(registry)
+    const login = await request(app).post('/api/sessao').send({ email: 'ada@exemplo.test' })
+    const started = Date.now()
+    const connect = await request(app).post('/api/whatsapp/connect').set('Cookie', login.headers['set-cookie'])
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect(connect.body.status).toBe('connecting')
+    expect(connect.body.etapa).toBe('Abrindo o navegador…')
+    release()
+    await gate
+  })
 })

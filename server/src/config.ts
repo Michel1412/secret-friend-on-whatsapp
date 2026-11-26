@@ -31,6 +31,8 @@ export const config = {
   ackTimeoutMs: boundedInteger('ACK_TIMEOUT_MS', 6000, 1000, 30000),
   deleteConfirmMs: boundedInteger('DELETE_CONFIRM_TIMEOUT_MS', 8000, 1000, 30000),
   logLevel: process.env.LOG_LEVEL || 'warn',
+  /** Espera do WhatsApp Web ficar pareável. Não troca a versão; só dá tempo se a página estiver lenta. */
+  authTimeoutMs: boundedInteger('WA_AUTH_TIMEOUT_MS', 30000, 10000, 120000),
 }
 
 export function clampSendDelay(value: unknown): number {
