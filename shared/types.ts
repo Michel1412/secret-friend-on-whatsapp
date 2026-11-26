@@ -41,6 +41,8 @@ export type WhatsAppSnapshot = {
   /** A chave de sincronização do celular já está neste computador. */
   appStateReady: boolean
   appStateReadyEm: string | null
+  /** Etapa da abertura, em português. Ausente quando não há carga em andamento. */
+  etapa?: string | null
 }
 
 export type SendJobView = {

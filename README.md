@@ -168,6 +168,8 @@ Não commite o `.env`. Ele está no `.gitignore`. O único token de exemplo apro
 | `MCP_HTTP_PORT` | comentada (`38473`) | Se definida, o mesmo processo do MCP também escuta HTTP só em `127.0.0.1`, no caminho `/mcp`. Não é um padrão do código: sem a variável, só existe o stdio. |
 | `MCP_TOKEN` | comentada (`token-dev-mcp-cursor`) | Bearer exigido pelo HTTP. O valor do exemplo serve só para teste local. O Cursor lê o mesmo nome pela interpolação `${env:MCP_TOKEN}`. Sem token, o modo HTTP encerra. |
 | `LOG_LEVEL` | `warn` | Nível do Pino: `silent`, `warn`, `info` ou `debug`. `info` mostra jid, id da mensagem, o executável escolhido e o passo do teste de apagar. O texto da mensagem e o nome sorteado não entram no log. |
+| `WWEB_VERSION` | vazio | Opcional. Se preenchida, força essa versão do WhatsApp Web (formato `2.3000.123` ou com `-alpha`). Vazia: a 1ª tentativa é a versão que o WhatsApp entregar; se der timeout, usa a última que conectou nesta máquina (`data/whatsapp-web-version.json`, só o número) e, se faltar ou falhar, uma versão recente da lista pública do [wppconnect-team/wa-version](https://github.com/wppconnect-team/wa-version). No máximo 3 tentativas. |
+| `WA_AUTH_TIMEOUT_MS` | `30000` | Quanto cada tentativa espera o WhatsApp Web ficar pareável, entre 10000 e 120000. Serve quando a página está lenta. Não escolhe a versão. |
 
 `config.ts` também lê `WHATSAPP_AUTH_DIR` (padrão `data/auth`) e `DRAW_FILE` (padrão `data/sorteio.json`), mas nenhuma sessão nem sorteio consulta esses campos. A pasta real é `DATA_DIR/users/<id>/`. Definir as duas não move o pareamento.
 
@@ -202,7 +204,7 @@ Para abrir a interface compilada é preciso um servidor estático na frente, com
 ### Conectar o WhatsApp pelo QR
 
 1. Abra [http://127.0.0.1:38472](http://127.0.0.1:38472) e entre com um e-mail. Não há senha.
-2. Clique em **Gerar QR**. A primeira abertura sobe o navegador headless; pode levar alguns segundos. Se o QR já estiver na tela, o botão passa a **Atualizar QR**.
+2. Clique em **Gerar QR**. A resposta volta na hora e o resto da tela continua usável. A etapa aparece no cartão: abrindo o navegador, carregando o WhatsApp Web, tentando outra versão, ou QR pronto. Se estourar o tempo, o app tenta de novo sozinho (última versão que já conectou nesta máquina e, se precisar, uma recente da lista pública). No máximo 3 vezes. Se a tela disser que o WhatsApp Web não terminou de carregar, feche outras janelas e use **Tentar de novo**. `WA_AUTH_TIMEOUT_MS` só alonga cada espera. `WWEB_VERSION` força uma versão, se você quiser.
 3. No celular: WhatsApp → **Aparelhos conectados** → **Conectar um aparelho**, e leia o QR.
 4. O aparelho aparece como **Papelzinho - ZAP** quando o WhatsApp Web deixa renomear; se não deixar, fica o nome padrão do navegador. Espere o selo **Verificado** (o app do celular precisa ficar aberto até `getChats()` terminar).
 5. Cadastre a turma, sorteie e envie. Enviar e **Testar apagar** seguem bloqueados sem o selo.

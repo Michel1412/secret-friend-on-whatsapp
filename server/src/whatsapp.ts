@@ -13,6 +13,18 @@ import {
 } from './browser-lock.ts'
 import { config, browserName, deviceName } from './config.ts'
 import { instalarNomeDoAparelho, type ClienteNome } from './device-name.ts'
+import {
+  WWEB_HTML_REMOTO,
+  WWEB_LISTA_REMOTA,
+  buscarVersaoRecente,
+  caminhoVersaoGuardada,
+  ehFalhaDeVersao,
+  gravarVersaoGuardada,
+  lerVersaoGuardada,
+  proximoPasso,
+  versaoValida,
+  type PassoVersao,
+} from './wweb-version.ts'
 import { resolveChromePath } from './chrome-path.ts'
 import { SendFailure, toSeconds, type DeliveryResult, type OutboundKey } from '../../shared/deliver.ts'
 import { sameAccount, type AccountRef } from '../../shared/identity.ts'
@@ -39,7 +51,25 @@ type WaClient = {
   sendMessage: (chatId: string, text: string) => Promise<WaMessage>
   getMessageById: (id: string) => Promise<WaMessage | null>
   getChats: () => Promise<unknown[]>
+  getWWebVersion?: () => Promise<string>
   info?: { wid?: { user?: string; _serialized?: string } }
+}
+
+type AcessoVersoes = {
+  forcada: string | null
+  ler: () => Promise<string | null>
+  gravar: (versao: string) => Promise<void>
+  recente: (evitar: Array<string | null>) => Promise<string | null>
+}
+
+function acessoVersoesPadrao(): AcessoVersoes {
+  const arquivo = caminhoVersaoGuardada(config.dataDir)
+  return {
+    forcada: versaoValida(process.env.WWEB_VERSION ?? ''),
+    ler: () => lerVersaoGuardada(arquivo),
+    gravar: (versao) => gravarVersaoGuardada(arquivo, versao),
+    recente: (evitar) => buscarVersaoRecente({ url: WWEB_LISTA_REMOTA, timeoutMs: 4000, evitar }),
+  }
 }
 
 function emptySnapshot(): WhatsAppSnapshot {
@@ -51,6 +81,7 @@ function emptySnapshot(): WhatsAppSnapshot {
     error: null,
     appStateReady: false,
     appStateReadyEm: null,
+    etapa: null,
   }
 }
 
@@ -78,6 +109,7 @@ export class WhatsAppSession {
     private readonly dataPath: string,
     private readonly clientId: string,
     private readonly launch?: () => Promise<void>,
+    private readonly versoes: AcessoVersoes = acessoVersoesPadrao(),
   ) {}
 
   getOrStart(): Promise<void> {
@@ -105,6 +137,15 @@ export class WhatsAppSession {
   connect(force = false): Promise<void> {
     if (this.opening) return this.opening
     if (!force && (this.snapshot.status === 'connected' || this.snapshot.status === 'qr')) return Promise.resolve()
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'connecting',
+      qrDataUrl: null,
+      error: null,
+      appStateReady: false,
+      appStateReadyEm: null,
+      etapa: 'Abrindo o navegador…',
+    }
     return this.getOrStart()
   }
 
@@ -310,24 +351,27 @@ export class WhatsAppSession {
     }
   }
 
-  private wire(client: WaClient, generation: number): void {
+  private wire(client: WaClient, generation: number, versaoPedida: string | null): void {
     client.on('qr', ((qr: string) => {
       if (generation !== this.generation) return
+      void this.guardarVersao(versaoPedida, client)
       void qrcode.toDataURL(qr, { margin: 1, width: 280 }).then((qrDataUrl) => {
         if (generation !== this.generation) return
-        this.snapshot = { ...this.snapshot, status: 'qr', qrDataUrl, error: null }
+        this.snapshot = { ...this.snapshot, status: 'qr', qrDataUrl, error: null, etapa: 'QR pronto.' }
         logger.info('qr pronto')
       })
     }) as (...args: never[]) => void)
 
     client.on('ready', (() => {
       if (generation !== this.generation) return
+      void this.guardarVersao(versaoPedida, client)
       this.rememberOwn(client)
       this.snapshot = {
         ...this.snapshot,
         status: 'connected',
         qrDataUrl: null,
         error: null,
+        etapa: null,
         phone: this.own.phone ?? null,
       }
       logger.info({ jid: this.own.jid }, 'whatsapp conectado')
@@ -347,9 +391,16 @@ export class WhatsAppSession {
     }) as (...args: never[]) => void)
   }
 
-  private createClient(executablePath: string | undefined): WaClient {
+  private createClient(executablePath: string | undefined, versao: string | null): WaClient {
     return new Client({
       authStrategy: new LocalAuth({ clientId: this.clientId, dataPath: this.dataPath }),
+      authTimeoutMs: config.authTimeoutMs,
+      ...(versao
+        ? {
+            webVersion: versao,
+            webVersionCache: { type: 'remote' as const, remotePath: WWEB_HTML_REMOTO, strict: true },
+          }
+        : { webVersionCache: { type: 'none' as const } }),
       puppeteer: {
         headless: true,
         args: ['--no-sandbox', '--disable-dev-shm-usage'],
@@ -358,10 +409,7 @@ export class WhatsAppSession {
     }) as unknown as WaClient
   }
 
-  private async open(): Promise<void> {
-    const generation = ++this.generation
-    this.intentionalClose = false
-    await this.dropClient()
+  private marcarEtapa(etapa: string): void {
     this.snapshot = {
       ...this.snapshot,
       status: 'connecting',
@@ -369,7 +417,35 @@ export class WhatsAppSession {
       error: null,
       appStateReady: false,
       appStateReadyEm: null,
+      etapa,
     }
+  }
+
+  private async guardarVersao(pedida: string | null, client: WaClient): Promise<void> {
+    try {
+      let versao = versaoValida(pedida)
+      if (!versao && client.getWWebVersion) versao = versaoValida(await client.getWWebVersion())
+      if (versao) await this.versoes.gravar(versao)
+    } catch (error) {
+      logger.warn({ ...errorFields(error) }, 'não guardei a versão do whatsapp web')
+    }
+  }
+
+  private async lembrarVersaoVista(passo: PassoVersao, client: WaClient): Promise<void> {
+    if (passo.versao || !client.getWWebVersion) return
+    try {
+      passo.versao = versaoValida(await client.getWWebVersion())
+    } catch {
+      // a página pode ter caído junto com o timeout
+    }
+  }
+
+  private async open(): Promise<void> {
+    const generation = ++this.generation
+    this.intentionalClose = false
+    await this.dropClient()
+    if (generation !== this.generation) return
+    this.marcarEtapa('Abrindo o navegador…')
     await mkdir(this.dataPath, { recursive: true })
     const executablePath = resolveChromePath({
       platform: process.platform,
@@ -378,43 +454,73 @@ export class WhatsAppSession {
     })
     logger.info({ executablePath: executablePath ?? 'padrão do puppeteer' }, 'navegador escolhido')
     const perfil = sessionUserDataDir(this.dataPath, this.clientId)
+    const forcada = this.versoes.forcada
+    const guardada = forcada ? null : await this.versoes.ler()
+    let recente: string | null = null
+    let recentePedida = false
+    const tentadas: PassoVersao[] = []
     let lastError: unknown = null
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      if (generation !== this.generation) return
-      const client = this.createClient(executablePath)
-      this.client = client
-      this.wire(client, generation)
-      const pararNome = instalarNomeDoAparelho(client as unknown as ClienteNome, deviceName, browserName, (nivel, mensagem, extra) => {
-        if (nivel === 'info') logger.info(extra, mensagem)
-        else logger.warn(extra, mensagem)
-      })
-      try {
-        await client.initialize()
-        return
-      } catch (error) {
-        lastError = error
-        const message = errorFields(error).message
-        logger.error({ message, attempt }, 'falha ao abrir whatsapp')
-        if (generation !== this.generation) return
-        const travado = isBrowserAlreadyRunning(message)
-        if (travado && attempt === 1) {
-          const dir = userDataDirFromError(message) || perfil
-          await this.dropClient()
-          try {
-            const released = await releaseStuckBrowser(dir)
-            logger.warn(
-              { processos: released.killed.length, proprios: released.kept.length, locks: released.removed.length },
-              'perfil do navegador estava preso',
-            )
-          } catch (releaseError) {
-            logger.warn({ ...errorFields(releaseError) }, 'não soltei o perfil do navegador')
-          }
-          continue
-        }
-        break
-      } finally {
-        pararNome()
+    let soltouPerfil = false
+    let pararCascata = false
+
+    while (generation === this.generation) {
+      let passo = proximoPasso({ forcada, guardada, recente, tentadas })
+      if (!passo && !forcada && !recentePedida && tentadas.length > 0) {
+        recentePedida = true
+        this.marcarEtapa('Tentando de novo com outra versão do WhatsApp Web…')
+        recente = await this.versoes.recente(tentadas.map((item) => item.versao))
+        passo = proximoPasso({ forcada, guardada, recente, tentadas })
       }
+      if (!passo) break
+      tentadas.push(passo)
+      if (passo.fonte === 'guardada' || passo.fonte === 'recente') {
+        this.marcarEtapa('Tentando de novo com outra versão do WhatsApp Web…')
+      } else {
+        this.marcarEtapa('Carregando o WhatsApp Web…')
+      }
+      let repetirPerfil = true
+      while (repetirPerfil && generation === this.generation) {
+        repetirPerfil = false
+        await this.dropClient()
+        if (generation !== this.generation) return
+        const client = this.createClient(executablePath, passo.versao)
+        this.client = client
+        this.wire(client, generation, passo.versao)
+        const pararNome = instalarNomeDoAparelho(client as unknown as ClienteNome, deviceName, browserName, (nivel, mensagem, extra) => {
+          if (nivel === 'info') logger.info(extra, mensagem)
+          else logger.warn(extra, mensagem)
+        })
+        try {
+          await client.initialize()
+          return
+        } catch (error) {
+          lastError = error
+          const message = errorFields(error).message
+          logger.error({ message, fonte: passo.fonte }, 'falha ao abrir whatsapp')
+          if (generation !== this.generation) return
+          if (!soltouPerfil && isBrowserAlreadyRunning(message)) {
+            soltouPerfil = true
+            const dir = userDataDirFromError(message) || perfil
+            await this.dropClient()
+            try {
+              const released = await releaseStuckBrowser(dir)
+              logger.warn(
+                { processos: released.killed.length, proprios: released.kept.length, locks: released.removed.length },
+                'perfil do navegador estava preso',
+              )
+            } catch (releaseError) {
+              logger.warn({ ...errorFields(releaseError) }, 'não soltei o perfil do navegador')
+            }
+            repetirPerfil = true
+            continue
+          }
+          await this.lembrarVersaoVista(passo, client)
+          if (!ehFalhaDeVersao(message)) pararCascata = true
+        } finally {
+          pararNome()
+        }
+      }
+      if (pararCascata) break
     }
     if (generation !== this.generation) return
     await this.dropClient()

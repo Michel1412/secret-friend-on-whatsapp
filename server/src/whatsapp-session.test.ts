@@ -15,6 +15,11 @@ const state = vi.hoisted(() => {
         throw new Error('The browser is already running for /tmp/papel-nenhum. Use a different profile')
       }
       if (state.mode === 'fail') throw new Error('chrome ausente')
+      if (state.mode === 'timeout') throw new Error('Waiting failed: 30000ms exceeded')
+      if (state.mode === 'timeout-once') {
+        state.mode = 'ok'
+        throw new Error('Waiting failed: 30000ms exceeded')
+      }
       if (state.mode === 'nome') await this.setDeviceName?.()
     })
     destroy = vi.fn(async () => undefined)
@@ -36,7 +41,13 @@ const state = vi.hoisted(() => {
       evaluate: (fn: (...args: unknown[]) => unknown, ...args: unknown[]) => Promise<unknown>
       waitForFunction?: () => Promise<unknown>
     } | null
-    constructor(public options?: { deviceName?: string; browserName?: string }) {
+    constructor(public options?: {
+      deviceName?: string
+      browserName?: string
+      authTimeoutMs?: number
+      webVersion?: string
+      webVersionCache?: { type?: string; remotePath?: string; strict?: boolean }
+    }) {
       state.lastOptions = options
       state.clients.push(this)
       if (state.withDeviceHook) {
@@ -58,7 +69,7 @@ const state = vi.hoisted(() => {
     }
   }
   return {
-    mode: 'ok' as 'ok' | 'retry' | 'fail' | 'nome',
+    mode: 'ok' as 'ok' | 'retry' | 'fail' | 'nome' | 'timeout' | 'timeout-once',
     withDeviceHook: false,
     lastOptions: undefined as { deviceName?: string; browserName?: string } | undefined,
     clients: [] as FakeClient[],
@@ -242,6 +253,7 @@ describe('sessão WhatsApp com cliente falso', () => {
     const { session, client } = await start()
     expect(state.lastOptions?.deviceName).toBeUndefined()
     expect(state.lastOptions?.browserName).toBeUndefined()
+    expect(state.lastOptions && 'authTimeoutMs' in state.lastOptions).toBe(true)
     expect(deviceName).toBe('Papelzinho - ZAP')
     expect(browserName).toBe('Chrome')
     expect(modulo.info()).toMatchObject({ os: 'Papelzinho - ZAP', name: 'Chrome', ua: 'ua' })
@@ -260,5 +272,100 @@ describe('sessão WhatsApp com cliente falso', () => {
     client.emit('qr', 'qr-sem-modulo')
     await vi.waitFor(() => expect(session.snapshot.qrDataUrl).toMatch(/^data:image/))
     expect(session.snapshot.status).toBe('qr')
+  })
+
+  it('depois do timeout tenta a versão guardada e, sem ela, uma recente', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'papel-wa-'))
+    dirs.push(dir)
+    const gravadas: string[] = []
+    state.mode = 'timeout-once'
+    const comGuardada = new WhatsAppSession(dir, 'cliente', undefined, {
+      forcada: null,
+      ler: async () => '2.3000.1050000001-alpha',
+      gravar: async (versao) => {
+        gravadas.push(versao)
+      },
+      recente: async () => '2.3000.1040000002-alpha',
+    })
+    await comGuardada.getOrStart()
+    expect(state.clients.map((client) => client.options?.webVersion ?? null)).toEqual([null, '2.3000.1050000001-alpha'])
+    expect(state.clients[0]?.options?.webVersionCache?.type).toBe('none')
+    expect(state.clients[1]?.options?.webVersionCache?.type).toBe('remote')
+    expect(comGuardada.snapshot.error).toBeNull()
+
+    state.clients.length = 0
+    state.mode = 'timeout-once'
+    const semGuardada = new WhatsAppSession(dir, 'cliente-2', undefined, {
+      forcada: null,
+      ler: async () => null,
+      gravar: async () => undefined,
+      recente: async (evitar) => {
+        expect(evitar).toContain(null)
+        return '2.3000.1040000002-alpha'
+      },
+    })
+    await semGuardada.getOrStart()
+    expect(state.clients.map((client) => client.options?.webVersion ?? null)).toEqual([null, '2.3000.1040000002-alpha'])
+  })
+
+  it('não troca de versão quando o erro não é timeout e para na terceira tentativa', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'papel-wa-'))
+    dirs.push(dir)
+    let recentes = 0
+    state.mode = 'fail'
+    const quebrado = new WhatsAppSession(dir, 'cliente', undefined, {
+      forcada: null,
+      ler: async () => '2.3000.1050000001-alpha',
+      gravar: async () => undefined,
+      recente: async () => {
+        recentes += 1
+        return '2.3000.1040000002-alpha'
+      },
+    })
+    await quebrado.getOrStart()
+    expect(state.clients).toHaveLength(1)
+    expect(recentes).toBe(0)
+    expect(quebrado.snapshot.error).toMatch(/navegador/)
+    expect(quebrado.snapshot.error).not.toMatch(/Waiting failed/)
+
+    state.clients.length = 0
+    state.mode = 'timeout'
+    const esgotado = new WhatsAppSession(dir, 'cliente-3', undefined, {
+      forcada: null,
+      ler: async () => '2.3000.1050000001-alpha',
+      gravar: async () => undefined,
+      recente: async () => '2.3000.1040000002-alpha',
+    })
+    await esgotado.getOrStart()
+    expect(state.clients).toHaveLength(3)
+    expect(state.clients.map((client) => client.options?.webVersion ?? null)).toEqual([
+      null,
+      '2.3000.1050000001-alpha',
+      '2.3000.1040000002-alpha',
+    ])
+    expect(esgotado.snapshot.error).toMatch(/não terminou de carregar/)
+    expect(esgotado.snapshot.error).not.toMatch(/Waiting failed|30000/)
+    expect(esgotado.snapshot.etapa).toBeNull()
+  })
+
+  it('WWEB_VERSION força uma única tentativa e o QR guarda a versão vista', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'papel-wa-'))
+    dirs.push(dir)
+    const gravadas: string[] = []
+    state.mode = 'ok'
+    const session = new WhatsAppSession(dir, 'cliente', undefined, {
+      forcada: '2.3000.1040000000-alpha',
+      ler: async () => '2.3000.1050000001-alpha',
+      gravar: async (versao) => {
+        gravadas.push(versao)
+      },
+      recente: async () => '2.3000.1040000002-alpha',
+    })
+    await session.getOrStart()
+    expect(state.clients).toHaveLength(1)
+    expect(state.clients[0]?.options?.webVersion).toBe('2.3000.1040000000-alpha')
+    const client = state.clients[0]!
+    client.emit('qr', 'qr-versao')
+    await vi.waitFor(() => expect(gravadas).toEqual(['2.3000.1040000000-alpha']))
   })
 })

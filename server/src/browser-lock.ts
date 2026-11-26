@@ -127,6 +127,9 @@ export function mensagemAbertura(error: unknown, caminho?: string | null): strin
   const raw = error instanceof Error ? error.message : 'erro desconhecido'
   const limpa = sanitizarMensagem(raw, caminho ? [caminho] : [])
   if (!limpa) return 'Não consegui abrir o navegador do WhatsApp.'
+  if (/waiting failed:\s*\d+\s*ms exceeded/i.test(limpa) || /auth timeout/i.test(limpa)) {
+    return 'O WhatsApp Web não terminou de carregar. Feche outras janelas do WhatsApp Web, espere alguns segundos e clique em Gerar QR de novo. Se continuar, atualize o Chrome e tente outra vez.'
+  }
   if (/não consegui abrir o navegador/i.test(limpa)) return limpa
   return `Não consegui abrir o navegador do WhatsApp. ${limpa}`
 }

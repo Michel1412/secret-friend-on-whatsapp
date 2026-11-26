@@ -327,6 +327,62 @@ describe('interface', () => {
     expect(onTest).toHaveBeenCalledWith('11900000009')
   })
 
+  it('mostra a etapa da abertura e o botão de tentar de novo', async () => {
+    const user = userEvent.setup()
+    const onConnect = vi.fn()
+    const { rerender } = render(
+      <ConnectionCard
+        wa={{
+          status: 'connecting',
+          qrDataUrl: null,
+          phone: null,
+          pushName: null,
+          error: null,
+          appStateReady: false,
+          appStateReadyEm: null,
+          etapa: 'Carregando o WhatsApp Web…',
+        }}
+        busy={false}
+        testing={false}
+        verificado={false}
+        testSteps={null}
+        codigoTeste={null}
+        testes={[]}
+        onConnect={onConnect}
+        onAskLogout={() => undefined}
+        onTest={() => undefined}
+      />,
+    )
+    expect(screen.getByRole('status').textContent).toContain('Carregando o WhatsApp Web…')
+    expect((screen.getByRole('button', { name: 'Gerando QR…' }) as HTMLButtonElement).disabled).toBe(true)
+    rerender(
+      <ConnectionCard
+        wa={{
+          status: 'disconnected',
+          qrDataUrl: null,
+          phone: null,
+          pushName: null,
+          error: 'O WhatsApp Web não terminou de carregar. Feche outras janelas do WhatsApp Web, espere alguns segundos e clique em Gerar QR de novo. Se continuar, atualize o Chrome e tente outra vez.',
+          appStateReady: false,
+          appStateReadyEm: null,
+          etapa: null,
+        }}
+        busy={false}
+        testing={false}
+        verificado={false}
+        testSteps={null}
+        codigoTeste={null}
+        testes={[]}
+        onConnect={onConnect}
+        onAskLogout={() => undefined}
+        onTest={() => undefined}
+      />,
+    )
+    expect(screen.getByRole('alert').textContent).toContain('não terminou de carregar')
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(onConnect).toHaveBeenCalled()
+  })
+
   it('mostra o selo, o histórico e o vazio do envio', () => {
     render(
       <>

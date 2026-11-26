@@ -221,6 +221,7 @@ export function App() {
     }
   }
 
+  const carregandoConexao = wa?.status === 'connecting'
   const mismatch = Boolean(sorteio && impressaoDaLista(people) !== sorteio.impressao)
   const recipients =
     sorteio?.participantes.filter((person) => person.status !== 'apagado' && !person.manter).map((person) => person.nome) ??
@@ -324,7 +325,7 @@ export function App() {
             people={people}
             message={message}
             delay={delay}
-            locked={!connected}
+            locked={!connected && !carregandoConexao}
             frozen={envio.ativo || busy === 'draw'}
             onChange={setPeople}
             onImportExtras={(extras) => {
@@ -335,7 +336,7 @@ export function App() {
           <MessageCard
             message={message}
             delay={delay}
-            locked={!connected}
+            locked={!connected && !carregandoConexao}
             frozen={envio.ativo || busy === 'draw'}
             peopleCount={people.length}
             hasDraw={Boolean(sorteio)}
